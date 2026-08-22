@@ -1,0 +1,190 @@
+import os
+import pandas as pd
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+
+# ============================================================
+# READ DATA
+# ============================================================
+
+df = pd.read_parquet(
+    "data/parquet_data/RELIANCE-EQ_1min.parquet"
+)
+
+df["timestamp"] = pd.to_datetime(df["timestamp"])
+
+# ============================================================
+# SELECT ONE TRADING DAY
+# ============================================================
+
+selected_day = "2024-02-13"
+
+day_df = df[
+    df["timestamp"].dt.strftime("%Y-%m-%d") == selected_day
+].copy()
+
+# ============================================================
+# CALCULATE VOLUME EXPLOSION
+# ============================================================
+
+window = 20
+
+day_df["avg_volume"] = (
+    day_df["volume"]
+    .rolling(window=window)
+    .mean()
+)
+
+day_df["volume_explosion"] = (
+    day_df["volume"] /
+    day_df["avg_volume"]
+)
+
+day_df = day_df.dropna()
+
+# ============================================================
+# DAY MEAN
+# ============================================================
+
+mean_value = day_df["volume_explosion"].mean()
+
+# ============================================================
+# CREATE GRAPH
+# ============================================================
+
+fig = make_subplots(
+    specs=[[{"secondary_y": True}]]
+)
+
+# ------------------------------------------------------------
+# Close Price
+# ------------------------------------------------------------
+
+fig.add_trace(
+
+    go.Scatter(
+
+        x=day_df["timestamp"],
+        y=day_df["close"],
+
+        name="Close Price",
+
+        line=dict(
+            color="royalblue",
+            width=2
+        )
+
+    ),
+
+    secondary_y=False
+
+)
+
+# ------------------------------------------------------------
+# Volume Explosion
+# ------------------------------------------------------------
+
+fig.add_trace(
+
+    go.Scatter(
+
+        x=day_df["timestamp"],
+        y=day_df["volume_explosion"],
+
+        name="Volume Explosion",
+
+        line=dict(
+            color="orange",
+            width=2
+        )
+
+    ),
+
+    secondary_y=True
+
+)
+
+# ------------------------------------------------------------
+# Mean Line
+# ------------------------------------------------------------
+
+fig.add_trace(
+
+    go.Scatter(
+
+        x=[
+            day_df["timestamp"].iloc[0],
+            day_df["timestamp"].iloc[-1]
+        ],
+
+        y=[
+            mean_value,
+            mean_value
+        ],
+
+        name=f"Mean ({mean_value:.2f})",
+
+        line=dict(
+            color="red",
+            dash="dash",
+            width=2
+        )
+
+    ),
+
+    secondary_y=True
+
+)
+
+# ============================================================
+# LAYOUT
+# ============================================================
+
+fig.update_layout(
+
+    title="Feature E : Volume Explosion",
+
+    template="plotly_white",
+
+    width=1300,
+    height=700,
+
+    hovermode="x unified"
+
+)
+
+fig.update_xaxes(
+    title="Time"
+)
+
+fig.update_yaxes(
+
+    title_text="Close Price",
+
+    secondary_y=False
+
+)
+
+fig.update_yaxes(
+
+    title_text="Volume Explosion",
+
+    secondary_y=True
+
+)
+
+# ============================================================
+# SAVE
+# ============================================================
+
+os.makedirs("plots", exist_ok=True)
+
+fig.write_html(
+    "plots/featureE_volume_explosion_day.html"
+)
+
+fig.show()
+
+print("Rows :", len(day_df))
+
+print("Saved : plots/featureE_volume_explosion_day.html")
