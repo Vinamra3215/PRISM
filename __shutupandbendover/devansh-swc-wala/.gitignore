@@ -1,0 +1,15 @@
+cat << 'EOF' > .gitignore
+# Python cache
+__pycache__/
+*.pyc
+
+# Large Data files
+*.parquet
+*.csv
+
+# ML Models and Weights
+*.safetensors
+
+# Auto-generated plots/outputs
+*.html
+EOF
