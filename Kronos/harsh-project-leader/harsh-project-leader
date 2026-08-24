@@ -1,0 +1,49 @@
+===================================================================
+30-DAY KRONOS MODEL COMPARATIVE BASELINE REPORT
+Project Leader Output File: harsh-project-leader
+Generated On: 2026-08-13 20:37:30
+===================================================================
+
+1. DATASET METADATA
+-------------------
+Market          : Indian Stock Exchange (NSE)
+Ticker Target   : RELIANCE.NS
+Date Period     : 2022-01-01 to 2024-12-31
+Total Records   : 738 trading days
+Context Window  : 512 bars
+Forecast Horizon: 30 bars (30-Day Evaluation)
+
+2. 30-DAY MODEL COMPARISON & BENCHMARK MATRIX
+-------------------------------------------------------------------
+Model Name                       | RMSE     | MAE (₹)  | MAPE (%)
+-------------------------------------------------------------------
+Naive Persistence (Baseline 0)   | 36.68    | ₹31.84   | 2.52%
+20-Day Moving Avg (Baseline 1)  | 65.91    | ₹56.41   | 4.57%
+Kronos-base (Candidate Model)    | 60.29    | ₹53.75   | 4.24%
+-------------------------------------------------------------------
+
+3. SAMPLE PREDICTIONS (CHECKPOINTS ACROSS THE 30-DAY HORIZON)
+-------------------------------------------------------------------
+Date       | Actual Close | Naive Pred   | Kronos Pred  | Kronos Err
+-------------------------------------------------------------------
+2024-11-14 | ₹1256.75    | ₹1241.33    | ₹1243.60    | ₹-13.15
+2024-11-22 | ₹1254.57    | ₹1241.33    | ₹1229.99    | ₹-24.58
+2024-11-28 | ₹1259.92    | ₹1241.33    | ₹1218.64    | ₹-41.28
+2024-12-04 | ₹1297.74    | ₹1241.33    | ₹1211.62    | ₹-86.13
+2024-12-10 | ₹1273.85    | ₹1241.33    | ₹1195.61    | ₹-78.24
+2024-12-16 | ₹1257.44    | ₹1241.33    | ₹1196.66    | ₹-60.78
+2024-12-20 | ₹1194.98    | ₹1241.33    | ₹1177.20    | ₹-17.78
+2024-12-30 | ₹1200.33    | ₹1241.33    | ₹1165.52    | ₹-34.82
+
+4. QUALITATIVE OBSERVATIONS & PROJECT LEADER NOTES
+---------------------------------------------------
+- Horizon Setup: Evaluated a 30-day out-of-sample forecast given 512 historical bars of context.
+- Benchmark Comparison: Kronos UNDERPERFORMED the Naive baseline by 68.8% higher MAE due to horizon drift.
+- Context Utilization: The 512-bar window provides substantial context, but multi-week 
+  time-series generation requires tight tracking of short-term volatility pivots.
+- Recommended Action Item: Evaluate 5-day rolling step updates (walk-forward test) to refresh 
+  context dynamically over longer trading windows.
+
+===================================================================
+END OF BASELINE REPORT
+===================================================================

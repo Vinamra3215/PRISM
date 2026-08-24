@@ -1,0 +1,480 @@
+import pandas as pd
+import plotly.graph_objects as go
+
+# ============================================================
+# PATHS
+# ============================================================
+
+DATA_FILE = "data/NIFTY50_5Y_OHLCV.parquet"
+OUTPUT_FILE = "plots/baseline_1year.html"
+
+
+# ============================================================
+# LOAD DATA
+# ============================================================
+
+print("========================================")
+print("LOADING NIFTY50 DATA")
+print("========================================")
+
+df = pd.read_parquet(DATA_FILE)
+
+print("Shape:", df.shape)
+print("Columns:", df.columns.tolist())
+
+
+# ============================================================
+# HANDLE MULTIINDEX
+# ============================================================
+
+if isinstance(df.columns, pd.MultiIndex):
+    df.columns = df.columns.get_level_values(0)
+
+
+# ============================================================
+# GET DATE FROM INDEX
+# ============================================================
+
+if isinstance(df.index, pd.DatetimeIndex):
+
+    df = df.reset_index()
+
+    # Rename index column
+    df.rename(
+        columns={df.columns[0]: "timestamp"},
+        inplace=True
+    )
+
+else:
+
+    # Find date column
+    date_column = None
+
+    for col in df.columns:
+
+        name = str(col).lower()
+
+        if "date" in name or "time" in name:
+            date_column = col
+            break
+
+    if date_column is None:
+
+        print("ERROR: Date column not found.")
+        print(df.columns.tolist())
+
+        raise SystemExit
+
+    df.rename(
+        columns={date_column: "timestamp"},
+        inplace=True
+    )
+
+
+# ============================================================
+# STANDARDIZE CLOSE COLUMN
+# ============================================================
+
+close_column = None
+
+for col in df.columns:
+
+    name = str(col).lower()
+
+    if name == "close":
+
+        close_column = col
+        break
+
+
+if close_column is None:
+
+    print("ERROR: Close column not found.")
+    print(df.columns.tolist())
+
+    raise SystemExit
+
+
+df.rename(
+    columns={close_column: "close"},
+    inplace=True
+)
+
+
+# ============================================================
+# CLEAN DATA
+# ============================================================
+
+df["timestamp"] = pd.to_datetime(
+    df["timestamp"]
+)
+
+df["close"] = pd.to_numeric(
+    df["close"],
+    errors="coerce"
+)
+
+df = df.dropna(
+    subset=["timestamp", "close"]
+)
+
+df = df.sort_values(
+    "timestamp"
+)
+
+df = df.reset_index(drop=True)
+
+
+# ============================================================
+# SELECT ONE YEAR
+# ============================================================
+
+# CHANGE THESE DATES IF YOUR ASSIGNED YEAR IS DIFFERENT
+
+START_DATE = "2024-01-01"
+END_DATE = "2024-12-31"
+
+year_df = df[
+    (df["timestamp"] >= START_DATE)
+    &
+    (df["timestamp"] <= END_DATE)
+].copy()
+
+
+print("\n========================================")
+print("ONE YEAR DATA")
+print("========================================")
+
+print("Start:", year_df["timestamp"].min())
+print("End  :", year_df["timestamp"].max())
+print("Rows :", len(year_df))
+
+
+# ============================================================
+# CREATE GRAPH
+# ============================================================
+
+fig = go.Figure()
+
+
+fig.add_trace(
+    go.Scatter(
+        x=year_df["timestamp"],
+        y=year_df["close"],
+        mode="lines",
+        name="NIFTY50 Close",
+        line=dict(width=2)
+    )
+)
+
+
+# ============================================================
+# GRAPH SETTINGS
+# ============================================================
+
+fig.update_layout(
+
+    title="NIFTY50 - 1 Year Baseline",
+
+    xaxis_title="Date",
+
+    yaxis_title="NIFTY50 Price",
+
+    template="plotly_white",
+
+    hovermode="x unified",
+
+    width=1400,
+
+    height=700,
+
+    xaxis=dict(
+
+        rangeslider=dict(
+            visible=True
+        ),
+
+        type="date"
+    ),
+
+    margin=dict(
+        l=80,
+        r=80,
+        t=80,
+        b=80
+    )
+)
+
+
+# ============================================================
+# SAVE
+# ============================================================
+
+fig.write_html(
+    OUTPUT_FILE
+)
+
+
+print("\n========================================")
+print("GRAPH CREATED SUCCESSFULLY")
+print("========================================")
+
+print("File:")
+print(OUTPUT_FILE)
+
+import os
+import sys
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+from sklearn.metrics import mean_absolute_error
+from sklearn.metrics import mean_squared_error
+
+
+# ============================================================
+# 1. PATHS
+# ============================================================
+
+DATA_PATH = "data/NIFTY50_5Y_OHLCV.parquet"
+
+RESULTS_DIR = "results"
+PLOTS_DIR = "plots"
+
+os.makedirs(RESULTS_DIR, exist_ok=True)
+os.makedirs(PLOTS_DIR, exist_ok=True)
+
+
+# ============================================================
+# 2. LOAD DATA
+# ============================================================
+
+print("=" * 60)
+print("LOADING NIFTY50 DATA")
+print("=" * 60)
+
+df = pd.read_parquet(DATA_PATH)
+
+print("Original shape:", df.shape)
+print("Original columns:")
+print(df.columns)
+
+
+# ============================================================
+# 3. CLEAN COLUMNS
+# ============================================================
+
+# Handle MultiIndex columns from yfinance
+if isinstance(df.columns, pd.MultiIndex):
+    df.columns = df.columns.get_level_values(0)
+
+df.columns = [str(c).lower().strip() for c in df.columns]
+
+print("\nCleaned columns:")
+print(df.columns.tolist())
+
+
+# ============================================================
+# 4. FIND CLOSE COLUMN
+# ============================================================
+
+if "close" not in df.columns:
+    raise ValueError(
+        "Close column not found. Available columns: "
+        + str(df.columns.tolist())
+    )
+
+df = df.sort_index()
+
+df = df.dropna(subset=["close"])
+
+
+# ============================================================
+# 5. SELECT ONE YEAR
+# ============================================================
+
+# YOUR BASELINE YEAR
+START_DATE = "2024-01-01"
+END_DATE = "2024-12-31"
+
+baseline = df.loc[
+    (df.index >= START_DATE) &
+    (df.index <= END_DATE)
+].copy()
+
+
+print("\n" + "=" * 60)
+print("BASELINE DATA")
+print("=" * 60)
+
+print("Start:", baseline.index.min())
+print("End:", baseline.index.max())
+print("Rows:", len(baseline))
+
+
+if len(baseline) == 0:
+    raise ValueError("No data found for selected year.")
+
+
+# ============================================================
+# 6. NORMALIZE PRICE
+# ============================================================
+
+price = baseline["close"].astype(float)
+
+price_min = price.min()
+price_max = price.max()
+
+baseline["close_normalized"] = (
+    (price - price_min) /
+    (price_max - price_min)
+)
+
+
+# ============================================================
+# 7. BASELINE PREDICTION
+# ============================================================
+
+# ------------------------------------------------------------
+# TEMPORARY BASELINE
+#
+# This creates a persistence prediction:
+# tomorrow's prediction = today's actual price.
+#
+# Once Kronos inference is connected, ONLY this section
+# will be replaced by Kronos predictions.
+# ------------------------------------------------------------
+
+baseline["predicted_normalized"] = (
+    baseline["close_normalized"].shift(1)
+)
+
+baseline = baseline.dropna()
+
+
+# ============================================================
+# 8. CONVERT BACK TO ORIGINAL PRICE
+# ============================================================
+
+baseline["actual_price"] = (
+    baseline["close_normalized"] *
+    (price_max - price_min)
+    + price_min
+)
+
+baseline["predicted_price"] = (
+    baseline["predicted_normalized"] *
+    (price_max - price_min)
+    + price_min
+)
+
+
+# ============================================================
+# 9. METRICS
+# ============================================================
+
+actual = baseline["actual_price"]
+predicted = baseline["predicted_price"]
+
+mae = mean_absolute_error(actual, predicted)
+
+rmse = np.sqrt(
+    mean_squared_error(actual, predicted)
+)
+
+mape = np.mean(
+    np.abs((actual - predicted) / actual)
+) * 100
+
+
+print("\n" + "=" * 60)
+print("BASELINE METRICS")
+print("=" * 60)
+
+print(f"MAE  : {mae:.4f}")
+print(f"RMSE : {rmse:.4f}")
+print(f"MAPE : {mape:.4f}%")
+
+
+# ============================================================
+# 10. SAVE PREDICTIONS
+# ============================================================
+
+output_file = os.path.join(
+    RESULTS_DIR,
+    "baseline_2024_predictions.csv"
+)
+
+baseline[
+    [
+        "actual_price",
+        "predicted_price",
+        "close_normalized",
+        "predicted_normalized"
+    ]
+].to_csv(output_file)
+
+
+print("\nPredictions saved to:")
+print(output_file)
+
+
+# ============================================================
+# 11. PLOT
+# ============================================================
+
+plt.figure(figsize=(16, 7))
+
+plt.plot(
+    baseline.index,
+    baseline["actual_price"],
+    label="Actual Close Price",
+    linewidth=1.5
+)
+
+plt.plot(
+    baseline.index,
+    baseline["predicted_price"],
+    label="Predicted Close Price",
+    linewidth=1.5
+)
+
+plt.title(
+    f"NIFTY50 Baseline Model: Actual vs Predicted Price\n"
+    f"Training Year: {START_DATE} - {END_DATE}"
+)
+
+plt.xlabel("Date")
+plt.ylabel("NIFTY50 Close Price")
+
+plt.legend()
+
+plt.grid(alpha=0.3)
+
+plt.tight_layout()
+
+
+plot_file = os.path.join(
+    PLOTS_DIR,
+    "baseline_2024.png"
+)
+
+plt.savefig(
+    plot_file,
+    dpi=200,
+    bbox_inches="tight"
+)
+
+plt.close()
+
+print("\nGraph saved to:")
+print(plot_file)
+
+
+# ============================================================
+# 12. FINISHED
+# ============================================================
+
+print("\n" + "=" * 60)
+print("BASELINE COMPLETE")
+print("=" * 60)

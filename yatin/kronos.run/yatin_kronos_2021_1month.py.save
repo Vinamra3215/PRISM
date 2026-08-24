@@ -1,0 +1,1302 @@
+# ============================================================
+# KRONOS - 120 PERIOD LOOKBACK
+# RELIANCE.NS
+#
+# Purpose:
+# 1. Use 120 trading periods as model lookback
+# 2. Forecast the next 120 trading periods
+# 3. Compare predicted OHLC with actual OHLC
+# 4. Calculate MAE, RMSE and MAPE
+# 5. Detect sustained divergence
+# 6. ALWAYS show a vertical divergence/candidzz# 7. Create interactive Plotly candlestick graph
+# ============================================================
+
+import os
+import sys
+import warnings
+
+warnings.filterwarnings("ignore")
+
+import numpy as np
+import pandas as pd
+import torch
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+
+# ------------------------------------------------------------
+# KRONOS IMPORT
+# ------------------------------------------------------------
+
+from model import Kronos, KronosTokenizer, KronosPredictor
+
+
+# ============================================================
+# 1. SETTINGS
+# ============================================================
+
+TICKER = "RELIANCE.NS"
+
+# Your actual parquet file
+DATA_FILE = "/home/soq/yatin/RELIANCE_5Y_OHLCVdata.parquet"
+
+# IMPORTANT:
+# This is the MODEL LOOKBACK.
+LOOKBACK = 120
+
+# Number of future periods to compare
+PRED_LEN = 22
+
+# Date range from which the experiment is selected
+START_DATE = "2021-01-01"
+END_DATE = "2022-12-31"
+
+# Kronos models
+TOKENIZER_NAME = "NeoQuasar/Kronos-Tokenizer-base"
+MODEL_NAME = "NeoQuasar/Kronos-small"
+
+# Kronos maximum context
+MAX_CONTEXT = 512
+
+# Prediction parameters
+TEMPERATURE = 1.0
+TOP_P = 0.9
+SAMPLE_COUNT = 1
+
+
+# ============================================================
+# 2. OUTPUT DIRECTORY
+# ============================================================
+
+RESULTS_DIR = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
+    "_results"
+)
+
+os.makedirs(RESULTS_DIR, exist_ok=True)
+
+
+GRAPH_FILE = os.path.join(
+    RESULTS_DIR,
+    "yatin-kronos-2021-1month-interactive.html"
+)
+
+CSV_FILE = os.path.join(
+    RESULTS_DIR,
+    "yatin-kronos-2021-1month-results.csv"
+)
+
+REPORT_FILE = os.path.join(
+    RESULTS_DIR,
+    "yatin-kronos-2021-1month-report.txt"
+)
+
+
+# ============================================================
+# 3. LOAD DATA
+# ============================================================
+
+print("=" * 70)
+print("KRONOS 120-PERIOD EXPERIMENT")
+print("=" * 70)
+
+print()
+print("Loading data:")
+print(DATA_FILE)
+
+if not os.path.exists(DATA_FILE):
+    raise FileNotFoundError(
+        f"\nData file not found:\n{DATA_FILE}"
+    )
+
+df = pd.read_parquet(DATA_FILE)
+
+print()
+print("Original columns:")
+print(df.columns.tolist())
+
+
+# ============================================================
+# 4. CLEAN COLUMN NAMES
+# ============================================================
+
+# Convert MultiIndex columns if present
+if isinstance(df.columns, pd.MultiIndex):
+
+    new_columns = []
+
+    for col in df.columns:
+
+        if isinstance(col, tuple):
+            new_columns.append(
+                str(col[0]).strip().lower()
+            )
+        else:
+            new_columns.append(
+                str(col).strip().lower()
+            )
+
+    df.columns = new_columns
+
+else:
+
+    df.columns = [
+        str(col).strip().lower()
+        for col in df.columns
+    ]
+
+
+# Remove possible ticker suffixes from column names
+clean_columns = {}
+
+for col in df.columns:
+
+    name = col
+
+    if name.startswith("(") and name.endswith(")"):
+        name = name[1:-1]
+
+    name = name.replace("'", "")
+    name = name.replace('"', "")
+
+    clean_columns[col] = name.strip().lower()
+
+
+df = df.rename(columns=clean_columns)
+
+
+print()
+print("Cleaned columns:")
+print(df.columns.tolist())
+
+
+# ============================================================
+# 5. FIND TIMESTAMP COLUMN
+# ============================================================
+
+timestamp_candidates = [
+    "timestamp",
+    "timestamps",
+    "datetime",
+    "date",
+    "time"
+]
+
+timestamp_column = None
+
+for col in timestamp_candidates:
+
+    if col in df.columns:
+        timestamp_column = col
+        break
+
+
+if timestamp_column is None:
+
+    # Check if index is datetime
+    if isinstance(df.index, pd.DatetimeIndex):
+
+        df = df.reset_index()
+
+        timestamp_column = df.columns[0]
+
+    else:
+
+        raise ValueError(
+            "\nCould not find a date/timestamp column.\n"
+            f"Available columns: {df.columns.tolist()}"
+        )
+
+
+# Rename timestamp column
+df = df.rename(
+    columns={
+        timestamp_column: "timestamps"
+    }
+)
+
+
+# Convert timestamp
+df["timestamps"] = pd.to_datetime(
+    df["timestamps"],
+    errors="coerce"
+)
+
+
+# Remove invalid timestamps
+df = df.dropna(
+    subset=["timestamps"]
+)
+
+
+# Sort chronologically
+df = df.sort_values(
+    "timestamps"
+).reset_index(drop=True)
+
+
+print()
+print("Data range:")
+print(
+    df["timestamps"].min(),
+    "to",
+    df["timestamps"].max()
+)
+
+
+# ============================================================
+# 6. FIND OHLCV COLUMNS
+# ============================================================
+
+required_columns = [
+    "open",
+    "high",
+    "low",
+    "close"
+]
+
+for col in required_columns:
+
+    if col not in df.columns:
+
+        raise ValueError(
+            f"\nRequired column '{col}' not found.\n"
+            f"Available columns: {df.columns.tolist()}"
+        )
+
+
+# Volume is optional for Kronos
+if "volume" not in df.columns:
+
+    print()
+    print("Volume column not found.")
+    print("Creating zero volume column.")
+
+    df["volume"] = 0.0
+
+
+# Amount is optional
+if "amount" not in df.columns:
+
+    df["amount"] = 0.0
+
+
+# Convert numerical columns
+for col in [
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume",
+    "amount"
+]:
+
+    df[col] = pd.to_numeric(
+        df[col],
+        errors="coerce"
+    )
+
+
+# Remove invalid rows
+df = df.dropna(
+    subset=[
+        "open",
+        "high",
+        "low",
+        "close"
+    ]
+).reset_index(drop=True)
+
+
+# ============================================================
+# 7. SELECT EXPERIMENT PERIOD
+# ============================================================
+
+print()
+print("Selecting experiment period:")
+
+period_df = df[
+    (df["timestamps"] >= START_DATE)
+    &
+    (df["timestamps"] <= END_DATE)
+].copy()
+
+
+if len(period_df) < LOOKBACK + PRED_LEN:
+
+    raise ValueError(
+        "\nNot enough data in selected period.\n"
+        f"Required rows: {LOOKBACK + PRED_LEN}\n"
+        f"Available rows: {len(period_df)}"
+    )
+
+
+period_df = period_df.reset_index(
+    drop=True
+)
+
+
+print(
+    "Selected rows:",
+    len(period_df)
+)
+
+print(
+    "Selected range:",
+    period_df["timestamps"].iloc[0],
+    "to",
+    period_df["timestamps"].iloc[-1]
+)
+
+
+# ============================================================
+# 8. BUILD LOOKBACK + FORECAST DATA
+# ============================================================
+
+# First 120 periods = model context
+context_df = period_df.iloc[
+    :LOOKBACK
+].copy()
+
+
+# Next 120 periods = actual future values
+actual_df = period_df.iloc[
+    LOOKBACK:LOOKBACK + PRED_LEN
+].copy()
+
+
+if len(context_df) != LOOKBACK:
+
+    raise ValueError(
+        f"Context should contain {LOOKBACK} rows, "
+        f"but found {len(context_df)}"
+    )
+
+
+if len(actual_df) != PRED_LEN:
+
+    raise ValueError(
+        f"Actual forecast period should contain "
+        f"{PRED_LEN} rows, "
+        f"but found {len(actual_df)}"
+    )
+
+
+print()
+print("=" * 70)
+print("EXPERIMENT DATA")
+print("=" * 70)
+
+print(
+    "Lookback:",
+    len(context_df),
+    "trading periods"
+)
+
+print(
+    "Forecast:",
+    len(actual_df),
+    "trading periods"
+)
+
+print(
+    "Context:",
+    context_df["timestamps"].iloc[0],
+    "to",
+    context_df["timestamps"].iloc[-1]
+)
+
+print(
+    "Forecast:",
+    actual_df["timestamps"].iloc[0],
+    "to",
+    actual_df["timestamps"].iloc[-1]
+)
+
+
+# ============================================================
+# 9. PREPARE KRONOS INPUT
+# ============================================================
+
+x_df = context_df[
+    [
+        "open",
+        "high",
+        "low",
+        "close",
+        "volume",
+        "amount"
+    ]
+].copy()
+
+
+x_timestamp = context_df[
+    "timestamps"
+].copy()
+
+
+y_timestamp = actual_df[
+    "timestamps"
+].copy()
+
+
+# Make sure timestamps are Series
+x_timestamp = pd.Series(
+    x_timestamp
+).reset_index(drop=True)
+
+
+y_timestamp = pd.Series(
+    y_timestamp
+).reset_index(drop=True)
+
+
+# ============================================================
+# 10. LOAD KRONOS
+# ============================================================
+
+print()
+print("=" * 70)
+print("LOADING KRONOS")
+print("=" * 70)
+
+print()
+print("Tokenizer:")
+print(TOKENIZER_NAME)
+
+print()
+print("Model:")
+print(MODEL_NAME)
+
+
+tokenizer = KronosTokenizer.from_pretrained(
+    TOKENIZER_NAME
+)
+
+model = Kronos.from_pretrained(
+    MODEL_NAME
+)
+
+
+# Use available device automatically
+if torch.cuda.is_available():
+
+    DEVICE = "cuda:0"
+
+elif (
+    hasattr(torch.backends, "mps")
+    and torch.backends.mps.is_available()
+):
+
+    DEVICE = "mps"
+
+else:
+
+    DEVICE = "cpu"
+
+
+print()
+print("Device:", DEVICE)
+
+
+predictor = KronosPredictor(
+    model,
+    tokenizer,
+    device=DEVICE,
+    max_context=MAX_CONTEXT
+)
+
+
+# ============================================================
+# 11. RUN KRONOS FORECAST
+# ============================================================
+
+print()
+print("=" * 70)
+print("RUNNING KRONOS")
+print("=" * 70)
+
+with torch.no_grad():
+
+    pred_df = predictor.predict(
+
+        df=x_df,
+
+        x_timestamp=x_timestamp,
+
+        y_timestamp=y_timestamp,
+
+        pred_len=PRED_LEN,
+
+        T=TEMPERATURE,
+
+        top_p=TOP_P,
+
+        sample_count=SAMPLE_COUNT,
+
+        verbose=True
+    )
+
+
+# ============================================================
+# 12. PREPARE PREDICTION DATA
+# ============================================================
+
+pred_df = pred_df.copy()
+
+pred_df.index = pd.to_datetime(
+    pred_df.index
+)
+
+pred_df = pred_df.reset_index()
+
+pred_df = pred_df.rename(
+    columns={
+        pred_df.columns[0]: "timestamps"
+    }
+)
+
+
+# Make sure lengths match
+if len(pred_df) != len(actual_df):
+
+    raise ValueError(
+        "\nPrediction and actual lengths do not match.\n"
+        f"Prediction: {len(pred_df)}\n"
+        f"Actual: {len(actual_df)}"
+    )
+
+
+# Reset indexes
+actual_df = actual_df.reset_index(
+    drop=True
+)
+
+pred_df = pred_df.reset_index(
+    drop=True
+)
+
+
+# ============================================================
+# 13. CALCULATE CLOSE ERROR
+# ============================================================
+
+actual_close = actual_df[
+    "close"
+].astype(float).to_numpy()
+
+
+pred_close = pred_df[
+    "close"
+].astype(float).to_numpy()
+
+
+absolute_error = np.abs(
+    pred_close - actual_close
+)
+
+
+percentage_error = (
+    absolute_error
+    /
+    np.maximum(
+        np.abs(actual_close),
+        1e-8
+    )
+) * 100
+
+
+# ============================================================
+# 14. METRICS
+# ============================================================
+
+mae = float(
+    np.mean(absolute_error)
+)
+
+rmse = float(
+    np.sqrt(
+        np.mean(
+            (pred_close - actual_close) ** 2
+        )
+    )
+)
+
+mape = float(
+    np.mean(percentage_error)
+)
+
+
+print()
+print("=" * 70)
+print("MODEL METRICS")
+print("=" * 70)
+
+print()
+print(f"MAE  : {mae:.4f}")
+print(f"RMSE : {rmse:.4f}")
+print(f"MAPE : {mape:.2f}%")
+
+
+# ============================================================
+# 15. ROLLING ERROR
+# ============================================================
+
+ERROR_WINDOW = 20
+
+rolling_mae = (
+    pd.Series(
+        absolute_error
+    )
+    .rolling(
+        ERROR_WINDOW,
+        min_periods=1
+    )
+    .mean()
+    .to_numpy()
+)
+
+
+rolling_percentage_error = (
+    pd.Series(
+        percentage_error
+    )
+    .rolling(
+        ERROR_WINDOW,
+        min_periods=1
+    )
+    .mean()
+    .to_numpy()
+)
+
+
+# ============================================================
+# 16. SUSTAINED DIVERGENCE DETECTION
+# ============================================================
+
+# A point is considered strongly divergent when:
+#
+# prediction error >= 5%
+#
+# and this continues for at least 5 consecutive periods.
+
+DIVERGENCE_PERCENT = 5.0
+
+SUSTAINED_PERIODS = 5
+
+
+divergence_index = None
+
+
+for i in range(
+    len(percentage_error)
+    - SUSTAINED_PERIODS
+    + 1
+):
+
+    window = percentage_error[
+        i:i + SUSTAINED_PERIODS
+    ]
+
+    if np.all(
+        window >= DIVERGENCE_PERCENT
+    ):
+
+        divergence_index = i
+
+        break
+
+
+# ============================================================
+# 17. IF NO SUSTAINED DIVERGENCE:
+#     FIND MAXIMUM ERROR POINT
+# ============================================================
+
+max_error_index = int(
+    np.argmax(
+        rolling_percentage_error
+    )
+)
+
+
+# The graph will ALWAYS contain a vertical line.
+#
+# If sustained divergence exists:
+#       use actual divergence point
+#
+# Otherwise:
+#       use maximum-error point as a candidate
+#       and clearly label it.
+
+if divergence_index is not None:
+
+    line_index = divergence_index
+
+    line_type = "SUSTAINED DIVERGENCE"
+
+else:
+
+    line_index = max_error_index
+
+    line_type = "MAXIMUM ERROR / DIVERGENCE CANDIDATE"
+
+
+divergence_date = actual_df[
+    "timestamps"
+].iloc[line_index]
+
+
+divergence_error = percentage_error[
+    line_index
+]
+
+
+print()
+print("=" * 70)
+print("DIVERGENCE ANALYSIS")
+print("=" * 70)
+
+if divergence_index is not None:
+
+    print()
+    print("SUSTAINED DIVERGENCE FOUND")
+
+    print(
+        "Divergence date:",
+        divergence_date
+    )
+
+    print(
+        f"Error at divergence: "
+        f"{divergence_error:.2f}%"
+    )
+
+else:
+
+    print()
+    print("NO SUSTAINED DIVERGENCE FOUND")
+
+    print(
+        "Maximum-error candidate:",
+        divergence_date
+    )
+
+    print(
+        f"Maximum rolling error: "
+        f"{rolling_percentage_error[max_error_index]:.2f}%"
+    )
+
+
+# ============================================================
+# 18. CREATE COMBINED RESULTS TABLE
+# ============================================================
+
+results = actual_df[
+    [
+        "timestamps",
+        "open",
+        "high",
+        "low",
+        "close",
+        "volume"
+    ]
+].copy()
+
+
+results = results.rename(
+    columns={
+        "open": "actual_open",
+        "high": "actual_high",
+        "low": "actual_low",
+        "close": "actual_close",
+        "volume": "actual_volume"
+    }
+)
+
+
+results["predicted_open"] = pred_df[
+    "open"
+].values
+
+
+results["predicted_high"] = pred_df[
+    "high"
+].values
+
+
+results["predicted_low"] = pred_df[
+    "low"
+].values
+
+
+results["predicted_close"] = pred_df[
+    "close"
+].values
+
+
+results["absolute_close_error"] = (
+    absolute_error
+)
+
+
+results["percentage_close_error"] = (
+    percentage_error
+)
+
+
+results["rolling_20_mae"] = (
+    rolling_mae
+)
+
+
+results["rolling_20_percentage_error"] = (
+    rolling_percentage_error
+)
+
+
+# ============================================================
+# 19. SAVE CSV
+# ============================================================
+
+results.to_csv(
+    CSV_FILE,
+    index=False
+)
+
+
+# ============================================================
+# 20. BUILD INTERACTIVE PLOT
+# ============================================================
+
+fig = make_subplots(
+    rows=2,
+    cols=1,
+    shared_xaxes=True,
+    vertical_spacing=0.08,
+    row_heights=[0.72, 0.28],
+    subplot_titles=[
+        "Actual vs Kronos Predicted Candlesticks",
+        "Prediction Error"
+    ]
+)
+
+
+# ------------------------------------------------------------
+# ACTUAL CANDLESTICKS
+# ------------------------------------------------------------
+
+fig.add_trace(
+
+    go.Candlestick(
+
+        x=actual_df["timestamps"],
+
+        open=actual_df["open"],
+
+        high=actual_df["high"],
+
+        low=actual_df["low"],
+
+        close=actual_df["close"],
+
+        name="Actual",
+
+        increasing_line_color="#2ca02c",
+
+        decreasing_line_color="#ff3333"
+    ),
+
+    row=1,
+    col=1
+)
+
+
+# ------------------------------------------------------------
+# PREDICTED CANDLESTICKS
+# ------------------------------------------------------------
+
+fig.add_trace(
+
+    go.Candlestick(
+
+        x=pred_df["timestamps"],
+
+        open=pred_df["open"],
+
+        high=pred_df["high"],
+
+        low=pred_df["low"],
+
+        close=pred_df["close"],
+
+        name="Kronos Prediction",
+
+        increasing_line_color="#8fd3c7",
+
+        decreasing_line_color="#ff9999",
+
+        opacity=0.65
+    ),
+
+    row=1,
+    col=1
+)
+
+
+# ------------------------------------------------------------
+# ABSOLUTE ERROR
+# ------------------------------------------------------------
+
+fig.add_trace(
+
+    go.Scatter(
+
+        x=actual_df["timestamps"],
+
+        y=absolute_error,
+
+        mode="lines",
+
+        name="Absolute Close Error",
+
+        line=dict(
+            width=2
+        )
+    ),
+
+    row=2,
+    col=1
+)
+
+
+# ------------------------------------------------------------
+# ROLLING MAE
+# ------------------------------------------------------------
+
+fig.add_trace(
+
+    go.Scatter(
+
+        x=actual_df["timestamps"],
+
+        y=rolling_mae,
+
+        mode="lines",
+
+        name="20-Period Rolling MAE",
+
+        line=dict(
+            width=2
+        )
+    ),
+
+    row=2,
+    col=1
+)
+
+
+# ============================================================
+# 21. DIVERGENCE VERTICAL LINE
+# ============================================================
+
+if divergence_index is not None:
+
+    annotation_text = (
+        "SUSTAINED DIVERGENCE<br>"
+        f"Error: {divergence_error:.2f}%"
+    )
+
+else:
+
+    annotation_text = (
+        "MAXIMUM ERROR / "
+        "DIVERGENCE CANDIDATE<br>"
+        f"Error: {divergence_error:.2f}%"
+    )
+
+
+fig.add_vline(
+
+    x=divergence_date,
+
+    line_width=3,
+
+    line_dash="dash",
+
+    line_color="black",
+
+    row=1,
+    col=1
+)
+
+
+fig.add_vline(
+
+    x=divergence_date,
+
+    line_width=3,
+
+    line_dash="dash",
+
+    line_color="black",
+
+    row=2,
+    col=1
+)
+
+
+# ============================================================
+# 22. DIVERGENCE ANNOTATION
+# ============================================================
+
+fig.add_annotation(
+
+    x=divergence_date,
+
+    y=1,
+
+    xref="x",
+
+    yref="paper",
+
+    text=annotation_text,
+
+    showarrow=True,
+
+    arrowhead=2,
+
+    ax=80,
+
+    ay=-50,
+
+    font=dict(
+        size=13
+    ),
+
+    bgcolor="white",
+
+    bordercolor="black",
+
+    borderwidth=1
+)
+
+
+# ============================================================
+# 23. GRAPH LAYOUT
+# ============================================================
+
+fig.update_layout(
+
+    title=dict(
+
+        text=(
+            f"{TICKER} — Kronos "
+            f"{LOOKBACK}-Period Lookback / "
+            f"Divergence Analysis"
+        ),
+
+        x=0.5
+    ),
+
+    height=1000,
+
+    width=None,
+
+    xaxis_rangeslider_visible=False,
+
+    hovermode="x unified",
+
+    legend=dict(
+        orientation="h",
+        yanchor="bottom",
+        y=1.02,
+        xanchor="left",
+        x=0
+    )
+)
+
+
+fig.update_yaxes(
+    title_text="Price (₹)",
+    row=1,
+    col=1
+)
+
+
+fig.update_yaxes(
+    title_text="Error",
+    row=2,
+    col=1
+)
+
+
+fig.update_xaxes(
+    title_text="Date",
+    row=2,
+    col=1
+)
+
+
+# ============================================================
+# 24. SAVE INTERACTIVE HTML
+# ============================================================
+
+fig.write_html(
+
+    GRAPH_FILE,
+
+    include_plotlyjs=True,
+
+    full_html=True
+)
+
+
+# ============================================================
+# 25. SAVE REPORT
+# ============================================================
+
+with open(
+    REPORT_FILE,
+    "w",
+    encoding="utf-8"
+) as f:
+
+    f.write(
+        "KRONOS 120-PERIOD EXPERIMENT\n"
+    )
+
+    f.write(
+        "=" * 70 + "\n\n"
+    )
+
+    f.write(
+        f"Ticker           : {TICKER}\n"
+    )
+
+    f.write(
+        f"Lookback         : {LOOKBACK} trading periods\n"
+    )
+
+    f.write(
+        f"Prediction       : {PRED_LEN} trading periods\n"
+    )
+
+    f.write(
+        f"Experiment start : {START_DATE}\n"
+    )
+
+    f.write(
+        f"Experiment end   : {END_DATE}\n\n"
+    )
+
+    f.write(
+        f"MAE              : {mae:.4f}\n"
+    )
+
+    f.write(
+        f"RMSE             : {rmse:.4f}\n"
+    )
+
+    f.write(
+        f"MAPE             : {mape:.2f}%\n\n"
+    )
+
+    f.write(
+        "DIVERGENCE ANALYSIS\n"
+    )
+
+    f.write(
+        "-" * 70 + "\n"
+    )
+
+    if divergence_index is not None:
+
+        f.write(
+            "Sustained divergence found.\n"
+        )
+
+        f.write(
+            f"Divergence date : "
+            f"{divergence_date}\n"
+        )
+
+        f.write(
+            f"Error           : "
+            f"{divergence_error:.2f}%\n"
+        )
+
+    else:
+
+        f.write(
+            "No sustained divergence found.\n"
+        )
+
+        f.write(
+            "Maximum-error point shown on graph.\n"
+        )
+
+        f.write(
+            f"Candidate date  : "
+            f"{divergence_date}\n"
+        )
+
+        f.write(
+            f"Error           : "
+            f"{divergence_error:.2f}%\n"
+        )
+
+    f.write(
+        "\n"
+    )
+
+    f.write(
+        f"Graph           : {GRAPH_FILE}\n"
+    )
+
+    f.write(
+        f"CSV             : {CSV_FILE}\n"
+    )
+
+
+# ============================================================
+# 26. FINAL OUTPUT
+# ============================================================
+
+print()
+print("=" * 70)
+print("EXPERIMENT COMPLETED SUCCESSFULLY")
+print("=" * 70)
+
+print()
+print("LOOKBACK        :", LOOKBACK)
+print("PREDICTION      :", PRED_LEN)
+
+print()
+print(f"MAE             : {mae:.4f}")
+print(f"RMSE            : {rmse:.4f}")
+print(f"MAPE            : {mape:.2f}%")
+
+print()
+print("DIVERGENCE TYPE :", line_type)
+print("DIVERGENCE DATE :", divergence_date)
+print(
+    f"DIVERGENCE ERROR: "
+    f"{divergence_error:.2f}%"
+)
+
+print()
+print("Generated files:")
+
+print()
+print("GRAPH :")
+print(GRAPH_FILE)
+
+print()
+print("CSV   :")
+print(CSV_FILE)
+
+print()
+print("REPORT:")
+print(REPORT_FILE)
+
+print()
+print("=" * 70)

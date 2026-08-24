@@ -1,0 +1,51 @@
+================================================================================
+KRONOS BASELINE DIVERGENCE REPORT
+================================================================================
+
+Ticker              : RELIANCE.NS
+Forecast start      : 2021-01-01
+Lookback            : 400 trading periods
+Forecast horizon    : 400 trading periods
+Model               : NeoQuasar/Kronos-base
+Device              : cpu
+
+--------------------------------------------------------------------------------
+DATA WINDOW
+--------------------------------------------------------------------------------
+Context start       : 2019-05-23
+Context end         : 2020-12-31
+Forecast start      : 2021-01-01
+Forecast end        : 2022-08-11
+
+--------------------------------------------------------------------------------
+MODEL PERFORMANCE
+--------------------------------------------------------------------------------
+MAE                 : 455.7509
+RMSE                : 505.9241
+MAPE                : 40.90%
+
+--------------------------------------------------------------------------------
+DIVERGENCE ANALYSIS
+--------------------------------------------------------------------------------
+Rolling window      : 20
+Baseline MAE        : 181.2940
+Threshold            : 271.9411
+Persistence window  : 10
+Required persistence: 8
+
+DIVERGENCE DETECTED : YES
+Divergence horizon  : 114 trading periods
+Divergence date     : 2021-06-18
+Divergence MAE      : 302.9502
+
+INTERPRETATION:
+Kronos begins showing sustained prediction error around this horizon.
+This duration is the candidate horizon for the next training experiment.
+
+--------------------------------------------------------------------------------
+NEXT STEP
+--------------------------------------------------------------------------------
+First inspect the interactive Plotly graph.
+Then use the observed divergence duration to determine the next training/fine-tuning experiment.
+
+================================================================================

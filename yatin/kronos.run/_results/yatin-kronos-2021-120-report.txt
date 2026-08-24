@@ -1,0 +1,21 @@
+KRONOS 120-PERIOD EXPERIMENT
+======================================================================
+
+Ticker           : RELIANCE.NS
+Lookback         : 120 trading periods
+Prediction       : 120 trading periods
+Experiment start : 2021-01-01
+Experiment end   : 2022-12-31
+
+MAE              : 93.3349
+RMSE             : 129.5356
+MAPE             : 7.89%
+
+DIVERGENCE ANALYSIS
+----------------------------------------------------------------------
+Sustained divergence found.
+Divergence date : 2022-04-06 00:00:00
+Error           : 9.60%
+
+Graph           : /home/soq/yatin/kronos.run/_results/yatin-kronos-2021-120-interactive.html
+CSV             : /home/soq/yatin/kronos.run/_results/yatin-kronos-2021-120-results.csv

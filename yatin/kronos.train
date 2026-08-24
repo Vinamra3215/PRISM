@@ -1,0 +1,2535 @@
+# ================================================================
+# HCLTECH KRONOS + LoRA COMPLETE PIPELINE
+# ================================================================
+#
+# What this script does:
+#
+# 1. Automatically finds HCLTECH Parquet files
+# 2. Loads old + newer HCLTECH data when available
+# 3. Converts minute data to daily OHLCV if necessary
+# 4. Cleans and merges duplicate dates
+# 5. Uses 400 trading days as Kronos context
+# 6. Loads pretrained Kronos-small + tokenizer
+# 7. Adds custom LoRA adapters to Kronos transformer Linear layers
+# 8. Freezes original Kronos weights
+# 9. Trains only LoRA parameters
+# 10. Uses validation loss for automatic early stopping
+# 11. Saves BEST LoRA weights
+# 12. Generates Kronos prediction
+# 13. Calculates naive baseline
+# 14. Calculates divergence
+# 15. Calculates MAE / RMSE / MAPE
+# 16. Creates interactive Plotly HTML dashboard
+#
+# Output:
+#
+# ~/yatin/hcltech_lora/
+#
+#     best_lora_weights.pt
+#     final_lora_weights.pt
+#     training_history.csv
+#     predictions.csv
+#     kronos_hcltech_dashboard.html
+#
+# ================================================================
+
+
+import os
+import sys
+import math
+import json
+import copy
+import warnings
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+
+warnings.filterwarnings("ignore")
+
+
+# ================================================================
+# 1. PATHS
+# ================================================================
+
+HOME = "/home/soq"
+
+BASE_DIR = "/home/soq/yatin"
+
+OUTPUT_DIR = "/home/soq/yatin/hcltech_lora"
+
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+
+# ================================================================
+# 2. DATA FILES
+# ================================================================
+
+DATA_FILES = [
+
+    # Newer HCLTECH minute data
+    "/home/soq/yatin/yatin2/data/parquet_data/HCLTECH-EQ_1min.parquet",
+
+    # HCLTECH minute data
+    "/home/soq/1min based data of nifty50/HCLTECH-EQ_1min.parquet",
+
+    # Older HCLTECH selected columns
+    "/home/soq/1min based data of nifty50/HCL-selected-columns.parquet",
+
+    # Daily HCLTECH data created earlier
+    "/home/soq/yatin/kronos.run/hcltech_daily/HCLTECH_daily_2022_2026.parquet",
+
+]
+
+
+# ================================================================
+# 3. TRAINING PARAMETERS
+# ================================================================
+
+CONTEXT_LENGTH = 400
+
+# Number of future points for final evaluation
+PREDICTION_LENGTH = 120
+
+# Validation windows
+VALIDATION_DAYS = 120
+
+# Maximum epochs
+MAX_EPOCHS = 20
+
+# Minimum epochs before early stopping
+MIN_EPOCHS = 3
+
+# Early stopping patience
+PATIENCE = 3
+
+# Batch size
+BATCH_SIZE = 2
+
+# LoRA parameters
+LORA_RANK = 8
+LORA_ALPHA = 16
+LORA_DROPOUT = 0.05
+
+# Learning rate
+LEARNING_RATE = 1e-4
+
+# Weight decay
+WEIGHT_DECAY = 1e-4
+
+# Gradient clipping
+GRAD_CLIP = 1.0
+
+# Random seed
+SEED = 42
+
+
+# ================================================================
+# 4. RANDOM SEED
+# ================================================================
+
+np.random.seed(SEED)
+torch.manual_seed(SEED)
+
+if torch.cuda.is_available():
+    torch.cuda.manual_seed_all(SEED)
+
+
+# ================================================================
+# 5. DEVICE
+# ================================================================
+
+if torch.cuda.is_available():
+
+    DEVICE = "cuda"
+
+elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+
+    DEVICE = "mps"
+
+else:
+
+    DEVICE = "cpu"
+
+
+print()
+print("=" * 80)
+print("HCLTECH KRONOS + LoRA")
+print("=" * 80)
+
+print("Device:", DEVICE)
+
+print("Context length:", CONTEXT_LENGTH)
+
+print("Prediction length:", PREDICTION_LENGTH)
+
+print("Maximum epochs:", MAX_EPOCHS)
+
+print("LoRA rank:", LORA_RANK)
+
+print("=" * 80)
+
+
+# ================================================================
+# 6. IMPORT KRONOS
+# ================================================================
+
+print()
+print("=" * 80)
+print("LOADING KRONOS LIBRARY")
+print("=" * 80)
+
+
+KRONOS_ROOT = "/home/soq/Kronos"
+
+if os.path.exists(KRONOS_ROOT):
+
+    sys.path.insert(0, KRONOS_ROOT)
+
+try:
+
+    from model import Kronos, KronosTokenizer, KronosPredictor
+
+except Exception as e:
+
+    print()
+    print("ERROR: Could not import Kronos.")
+    print()
+    print("Expected Kronos repository:")
+    print(KRONOS_ROOT)
+    print()
+    print("Original error:")
+    print(e)
+    print()
+
+    sys.exit(1)
+
+
+# ================================================================
+# 7. DATA CLEANING FUNCTIONS
+# ================================================================
+
+
+def find_column(df, possible_names):
+
+    """
+    Find a column despite differences in:
+        spaces
+        capitalization
+        underscores
+        naming
+    """
+
+    normalized = {}
+
+    for col in df.columns:
+
+        name = (
+            str(col)
+            .strip()
+            .lower()
+            .replace("_", " ")
+        )
+
+        normalized[name] = col
+
+    for wanted in possible_names:
+
+        wanted_clean = (
+            wanted
+            .strip()
+            .lower()
+            .replace("_", " ")
+        )
+
+        if wanted_clean in normalized:
+
+            return normalized[wanted_clean]
+
+    return None
+
+
+def standardize_ohlcv(df, source_name):
+    """
+    Convert different HCLTECH column formats into:
+    timestamp, open, high, low, close, volume.
+    All timestamps are converted to timezone-naive IST.
+    """
+    print()
+    print("Processing:", source_name)
+    print("Original columns:")
+    print(df.columns.tolist())
+
+    timestamp_col = find_column(
+        df,
+        ["timestamp", "timestamps", "datetime", "date", "Date", "time"]
+    )
+    if timestamp_col is None:
+        raise ValueError(f"No timestamp/date column found in {source_name}")
+
+    open_col = find_column(df, ["open", "open price"])
+    high_col = find_column(df, ["high", "high price"])
+    low_col = find_column(df, ["low", "low price"])
+    close_col = find_column(df, ["close", "close price", "last price"])
+
+    if open_col is None:
+        raise ValueError(f"Open column missing in {source_name}")
+    if high_col is None:
+        raise ValueError(f"High column missing in {source_name}")
+    if low_col is None:
+        raise ValueError(f"Low column missing in {source_name}")
+    if close_col is None:
+        raise ValueError(f"Close column missing in {source_name}")
+
+    volume_col = find_column(
+        df,
+        [
+            "volume",
+            "total traded quantity",
+            "total trade quantity",
+            "total traded qty",
+            "total trade qty",
+        ],
+    )
+
+    result = pd.DataFrame()
+
+    # Normalize timestamps to timezone-naive IST.
+    parsed = pd.to_datetime(
+        df[timestamp_col].astype(str).str.strip(),
+        errors="coerce",
+    )
+
+    # Mixed timezone strings can produce an object Series, so normalize
+    # each value safely.
+    normalized_timestamps = []
+    for value in parsed:
+        if pd.isna(value):
+            normalized_timestamps.append(pd.NaT)
+            continue
+        try:
+            ts = pd.Timestamp(value)
+            if ts.tzinfo is not None:
+                ts = ts.tz_convert("Asia/Kolkata").tz_localize(None)
+            normalized_timestamps.append(ts)
+        except Exception:
+            normalized_timestamps.append(pd.NaT)
+
+    result["timestamp"] = pd.to_datetime(
+        normalized_timestamps,
+        errors="coerce",
+    )
+
+    result["open"] = pd.to_numeric(df[open_col], errors="coerce")
+    result["high"] = pd.to_numeric(df[high_col], errors="coerce")
+    result["low"] = pd.to_numeric(df[low_col], errors="coerce")
+    result["close"] = pd.to_numeric(df[close_col], errors="coerce")
+
+    if volume_col is not None:
+        volume = (
+            df[volume_col]
+            .astype(str)
+            .str.replace(",", "", regex=False)
+            .str.replace(" ", "", regex=False)
+        )
+        result["volume"] = pd.to_numeric(volume, errors="coerce")
+    else:
+        result["volume"] = 0.0
+
+    result = result.replace([np.inf, -np.inf], np.nan)
+    result = result.dropna(
+        subset=["timestamp", "open", "high", "low", "close"]
+    )
+
+    result = result[
+        (result["open"] > 0)
+        & (result["high"] > 0)
+        & (result["low"] > 0)
+        & (result["close"] > 0)
+    ]
+
+    result = result.sort_values("timestamp")
+    result = result.reset_index(drop=True)
+
+    print("Rows after cleaning:", len(result))
+    if len(result):
+        print("Start:", result["timestamp"].min())
+        print("End:", result["timestamp"].max())
+
+    return result
+
+
+# ================================================================
+# 8. LOAD HCLTECH FILES
+# ================================================================
+
+
+def load_all_hcltech():
+    print()
+    print("=" * 80)
+    print("SEARCHING FOR HCLTECH DATA")
+    print("=" * 80)
+
+    frames = []
+
+    for file_path in DATA_FILES:
+        if not os.path.exists(file_path):
+            print()
+            print("NOT FOUND:")
+            print(file_path)
+            continue
+
+        print()
+        print("FOUND:")
+        print(file_path)
+
+        try:
+            df = pd.read_parquet(file_path)
+            print("Rows:", len(df))
+
+            cleaned = standardize_ohlcv(df, file_path)
+            cleaned["source"] = file_path
+            frames.append(cleaned)
+
+        except Exception as e:
+            print()
+            print("Could not use file:")
+            print(file_path)
+            print("Reason:")
+            print(e)
+
+    if not frames:
+        raise FileNotFoundError("No usable HCLTECH Parquet file found.")
+
+    print()
+    print("Number of usable files:", len(frames))
+
+    combined = pd.concat(frames, ignore_index=True)
+    combined["timestamp"] = pd.to_datetime(
+        combined["timestamp"], errors="coerce"
+    )
+    combined = combined.dropna(subset=["timestamp"])
+    combined = combined.sort_values("timestamp")
+
+    # If the same minute exists in multiple source files, retain one copy.
+    combined = combined.drop_duplicates(
+        subset=["timestamp", "open", "high", "low", "close", "volume"]
+    )
+    combined = combined.reset_index(drop=True)
+
+    return combined
+
+
+# ================================================================
+# 9. CONVERT MINUTE DATA TO DAILY DATA
+# ================================================================
+
+
+def convert_to_daily(df):
+
+    print()
+    print("=" * 80)
+    print("CONVERTING HCLTECH DATA TO DAILY OHLCV")
+    print("=" * 80)
+
+
+    df = df.copy()
+
+
+    # Remove timezone safely
+
+    try:
+
+        if df["timestamp"].dt.tz is not None:
+
+            df["timestamp"] = (
+                df["timestamp"]
+                .dt.tz_convert("Asia/Kolkata")
+                .dt.tz_localize(None)
+            )
+
+    except Exception:
+
+        pass
+
+
+    df["date"] = (
+        df["timestamp"]
+        .dt.normalize()
+    )
+
+
+    daily = (
+        df
+        .groupby("date")
+        .agg(
+            open=("open", "first"),
+            high=("high", "max"),
+            low=("low", "min"),
+            close=("close", "last"),
+            volume=("volume", "sum")
+        )
+        .reset_index()
+    )
+
+
+    daily = daily.rename(
+        columns={
+            "date": "timestamp"
+        }
+    )
+
+
+    daily = daily.sort_values(
+        "timestamp"
+    )
+
+
+    daily = daily.drop_duplicates(
+        subset=["timestamp"],
+        keep="last"
+    )
+
+
+    daily = daily.reset_index(
+        drop=True
+    )
+
+
+    print(
+        "Daily rows:",
+        len(daily)
+    )
+
+    print(
+        "Daily start:",
+        daily["timestamp"].min()
+    )
+
+    print(
+        "Daily end:",
+        daily["timestamp"].max()
+    )
+
+
+    return daily
+
+
+# ================================================================
+# 10. LOAD DATA
+# ================================================================
+
+raw_df = load_all_hcltech()
+
+
+daily_df = convert_to_daily(
+    raw_df
+)
+
+
+# ================================================================
+# 11. SAVE MERGED DAILY DATA
+# ================================================================
+
+MERGED_FILE = os.path.join(
+    OUTPUT_DIR,
+    "HCLTECH_merged_daily.parquet"
+)
+
+
+daily_df.to_parquet(
+    MERGED_FILE,
+    index=False
+)
+
+
+print()
+print(
+    "Merged daily file saved:"
+)
+
+print(
+    MERGED_FILE
+)
+
+
+# ================================================================
+# 12. CHECK 400 DAYS
+# ================================================================
+
+if len(daily_df) < CONTEXT_LENGTH + PREDICTION_LENGTH:
+
+    raise ValueError(
+        f"Need at least "
+        f"{CONTEXT_LENGTH + PREDICTION_LENGTH} "
+        f"daily observations. "
+        f"Only {len(daily_df)} available."
+    )
+
+
+# ================================================================
+# 13. CREATE TRAIN / VALIDATION / TEST WINDOWS
+# ================================================================
+
+
+print()
+print("=" * 80)
+print("CREATING 400-DAY TRAINING WINDOWS")
+print("=" * 80)
+
+
+# Keep chronological ordering
+
+daily_df = daily_df.sort_values(
+    "timestamp"
+).reset_index(drop=True)
+
+
+# Final 120 days reserved for actual comparison
+
+test_df = daily_df.iloc[
+    -PREDICTION_LENGTH:
+].copy()
+
+
+# Everything before test period
+
+development_df = daily_df.iloc[
+    :-PREDICTION_LENGTH
+].copy()
+
+
+# ---------------------------------------------------------------
+# Training / validation split
+# ---------------------------------------------------------------
+
+validation_size = VALIDATION_DAYS
+
+
+if len(development_df) <= (
+    CONTEXT_LENGTH + validation_size
+):
+
+    raise ValueError(
+        "Not enough data for "
+        "400-day training + validation."
+    )
+
+
+train_df = development_df.iloc[
+    :-validation_size
+].copy()
+
+
+val_df = development_df.iloc[
+    -validation_size:
+].copy()
+
+
+print()
+
+print(
+    "Training rows:",
+    len(train_df)
+)
+
+print(
+    "Validation rows:",
+    len(val_df)
+)
+
+print(
+    "Test rows:",
+    len(test_df)
+)
+
+print()
+
+print(
+    "Training start:",
+    train_df["timestamp"].min()
+)
+
+print(
+    "Training end:",
+    train_df["timestamp"].max()
+)
+
+print()
+
+print(
+    "Validation start:",
+    val_df["timestamp"].min()
+)
+
+print(
+    "Validation end:",
+    val_df["timestamp"].max()
+)
+
+print()
+
+print(
+    "Test start:",
+    test_df["timestamp"].min()
+)
+
+print(
+    "Test end:",
+    test_df["timestamp"].max()
+)
+
+
+# ================================================================
+# 14. LOAD PRETRAINED KRONOS
+# ================================================================
+
+
+print()
+print("=" * 80)
+print("LOADING PRETRAINED KRONOS")
+print("=" * 80)
+
+
+print(
+    "Loading tokenizer..."
+)
+
+
+tokenizer = KronosTokenizer.from_pretrained(
+    "NeoQuasar/Kronos-Tokenizer-base"
+)
+
+
+print(
+    "Tokenizer loaded."
+)
+
+
+print(
+    "Loading Kronos-small..."
+)
+
+
+model = Kronos.from_pretrained(
+    "NeoQuasar/Kronos-small"
+)
+
+
+print(
+    "Kronos-small loaded."
+)
+
+
+model = model.to(
+    DEVICE
+)
+
+
+tokenizer = tokenizer.to(
+    DEVICE
+)
+
+
+# ================================================================
+# DEVICE SAFETY CHECK
+# ================================================================
+# Prevent the common CUDA/CPU mismatch seen during training.
+model = model.to(DEVICE)
+
+_model_devices = {
+    str(p.device)
+    for p in model.parameters()
+}
+
+print("Model parameter devices:", sorted(_model_devices))
+
+if len(_model_devices) != 1 or next(iter(_model_devices)) != str(torch.device(DEVICE)):
+    raise RuntimeError(
+        f"Model device mismatch. Expected {DEVICE}, "
+        f"but found {_model_devices}."
+    )
+
+
+# ================================================================
+# 15. CUSTOM LORA IMPLEMENTATION
+# ================================================================
+
+
+class LoRALinear(nn.Module):
+
+    """
+    Linear layer with LoRA.
+
+    Original:
+        y = Wx
+
+    LoRA:
+        y = Wx + BAx * alpha/r
+
+    W is frozen.
+    Only A and B are trained.
+    """
+
+
+    def __init__(
+        self,
+        original,
+        rank=8,
+        alpha=16,
+        dropout=0.05
+    ):
+
+        super().__init__()
+
+
+        self.original = original
+
+
+        # Freeze original weights
+
+        for p in self.original.parameters():
+
+            p.requires_grad = False
+
+
+        self.rank = rank
+
+        self.alpha = alpha
+
+        self.scaling = (
+            alpha / rank
+        )
+
+
+        self.dropout = nn.Dropout(
+            dropout
+        )
+
+
+        self.lora_A = nn.Parameter(
+            torch.zeros(
+                rank,
+                original.in_features,
+                device=original.weight.device,
+                dtype=original.weight.dtype
+            )
+        )
+
+
+        self.lora_B = nn.Parameter(
+            torch.zeros(
+                original.out_features,
+                rank,
+                device=original.weight.device,
+                dtype=original.weight.dtype
+            )
+        )
+
+
+        # Standard LoRA initialization
+
+        nn.init.kaiming_uniform_(
+            self.lora_A,
+            a=math.sqrt(5)
+        )
+
+        nn.init.zeros_(
+            self.lora_B
+        )
+
+
+    def forward(self, x):
+
+        original_output = self.original(
+            x
+        )
+
+
+        lora_output = F.linear(
+            self.dropout(x),
+            self.lora_A
+        )
+
+
+        lora_output = F.linear(
+            lora_output,
+            self.lora_B
+        )
+
+
+        return (
+            original_output
+            +
+            lora_output * self.scaling
+        )
+
+
+# ================================================================
+# 16. INSERT LORA
+# ================================================================
+
+
+def add_lora_to_model(
+    module,
+    prefix=""
+):
+
+    count = 0
+
+
+    for name, child in list(
+        module.named_children()
+    ):
+
+
+        full_name = (
+            f"{prefix}.{name}"
+            if prefix
+            else name
+        )
+
+
+        # Do not LoRA the final output heads.
+
+        if (
+            isinstance(child, nn.Linear)
+            and
+            "head" not in full_name.lower()
+        ):
+
+            setattr(
+                module,
+                name,
+                LoRALinear(
+                    child,
+                    rank=LORA_RANK,
+                    alpha=LORA_ALPHA,
+                    dropout=LORA_DROPOUT
+                )
+            )
+
+            count += 1
+
+
+        else:
+
+            count += add_lora_to_model(
+                child,
+                full_name
+            )
+
+
+    return count
+
+
+print()
+print("=" * 80)
+print("ADDING LoRA ADAPTERS")
+print("=" * 80)
+
+
+lora_count = add_lora_to_model(
+    model
+)
+
+# New LoRA parameters must also live on the model device.
+model = model.to(DEVICE)
+
+print(
+    "LoRA Linear layers:",
+    lora_count
+)
+
+
+# ================================================================
+# 17. FREEZE EVERYTHING EXCEPT LoRA
+# ================================================================
+
+
+for name, parameter in model.named_parameters():
+
+    if (
+        "lora_A" in name
+        or
+        "lora_B" in name
+    ):
+
+        parameter.requires_grad = True
+
+    else:
+
+        parameter.requires_grad = False
+
+
+trainable_params = []
+
+total_params = 0
+
+trainable_count = 0
+
+
+for parameter in model.parameters():
+
+    total_params += parameter.numel()
+
+    if parameter.requires_grad:
+
+        trainable_count += parameter.numel()
+
+        trainable_params.append(
+            parameter
+        )
+
+
+print()
+
+print(
+    "Total parameters:",
+    f"{total_params:,}"
+)
+
+print(
+    "Trainable LoRA parameters:",
+    f"{trainable_count:,}"
+)
+
+print(
+    "Trainable percentage:",
+    f"{100 * trainable_count / total_params:.4f}%"
+)
+
+
+# ================================================================
+# 18. OPTIMIZER
+# ================================================================
+
+
+optimizer = torch.optim.AdamW(
+    trainable_params,
+    lr=LEARNING_RATE,
+    weight_decay=WEIGHT_DECAY
+)
+
+
+# ================================================================
+# 19. CONVERT OHLCV TO KRONOS INPUT
+# ================================================================
+
+
+def make_kronos_input(df):
+    """
+    Prepare the six numerical features used by the official KronosPredictor:
+    open, high, low, close, volume, amount.
+
+    Each window is normalized using its own mean/std, matching KronosPredictor.
+    """
+    x = df[["open", "high", "low", "close", "volume"]].copy()
+
+    for col in x.columns:
+        x[col] = pd.to_numeric(x[col], errors="coerce")
+
+    x = x.replace([np.inf, -np.inf], np.nan)
+    x = x.ffill().bfill()
+
+    x["volume"] = x["volume"].fillna(0.0)
+
+    # Kronos uses an optional amount feature. For HCLTECH data we
+    # reconstruct it when the source file does not contain it.
+    x["amount"] = x["volume"] * x[
+        ["open", "high", "low", "close"]
+    ].mean(axis=1)
+
+    values = x[
+        ["open", "high", "low", "close", "volume", "amount"]
+    ].values.astype(np.float32)
+
+    mean = values.mean(axis=0)
+    std = values.std(axis=0)
+
+    values = (values - mean) / (std + 1e-5)
+    values = np.clip(values, -5.0, 5.0)
+
+    return x, values
+
+
+# ================================================================
+# 20. TOKENIZE ONE WINDOW
+# ================================================================
+
+
+@torch.no_grad()
+def tokenize_window(df):
+    _, values = make_kronos_input(df)
+
+    tensor = torch.tensor(
+        values,
+        dtype=torch.float32,
+        device=DEVICE,
+    ).unsqueeze(0)
+
+    token_output = tokenizer.encode(
+        tensor,
+        half=True,
+    )
+
+    if not isinstance(token_output, (tuple, list)) or len(token_output) != 2:
+        raise RuntimeError(
+            "Kronos tokenizer must return (s1_ids, s2_ids) with half=True."
+        )
+
+    # IMPORTANT: some Kronos tokenizer versions return token IDs on CPU
+    # even when the input tensor is on CUDA. Always move the returned
+    # tensors explicitly to the exact same device as the model.
+    s1_ids = token_output[0].long().to(DEVICE)
+    s2_ids = token_output[1].long().to(DEVICE)
+
+    timestamps = pd.to_datetime(
+        df["timestamp"],
+        errors="coerce",
+    )
+
+    stamp_df = pd.DataFrame(
+        {
+            "minute": timestamps.dt.minute,
+            "hour": timestamps.dt.hour,
+            "weekday": timestamps.dt.weekday,
+            "day": timestamps.dt.day,
+            "month": timestamps.dt.month,
+        }
+    )
+
+    stamp = torch.tensor(
+        stamp_df.values.astype(np.float32),
+        dtype=torch.float32,
+        device=DEVICE,
+    ).unsqueeze(0)
+
+    # Final hard guarantee: every model input is on the same device.
+    s1_ids = s1_ids.to(device=DEVICE, non_blocking=False)
+    s2_ids = s2_ids.to(device=DEVICE, non_blocking=False)
+    stamp = stamp.to(device=DEVICE, non_blocking=False)
+
+    return s1_ids, s2_ids, stamp
+
+
+# ================================================================
+# 21. CREATE TRAINING WINDOWS
+# ================================================================
+
+
+def create_windows(df, stride=1):
+    """
+    Create overlapping 400-day context windows.
+    A window is one self-supervised training example.
+    """
+    windows = []
+
+    if len(df) < CONTEXT_LENGTH:
+        return windows
+
+    for start_idx in range(
+        0,
+        len(df) - CONTEXT_LENGTH + 1,
+        stride,
+    ):
+        end_idx = start_idx + CONTEXT_LENGTH
+        windows.append(
+            df.iloc[start_idx:end_idx].copy()
+        )
+
+    return windows
+
+
+print()
+print("=" * 80)
+print("CREATING TRAINING WINDOWS")
+print("=" * 80)
+
+# Use every 5th starting point to keep training practical while
+# still covering the complete training period.
+WINDOW_STRIDE = 5
+
+train_windows = create_windows(
+    train_df,
+    stride=WINDOW_STRIDE,
+)
+
+val_context = pd.concat(
+    [
+        train_df.tail(CONTEXT_LENGTH),
+        val_df,
+    ],
+    ignore_index=True,
+)
+
+val_windows = create_windows(
+    val_context,
+    stride=max(1, WINDOW_STRIDE),
+)
+
+print("Training windows:", len(train_windows))
+print("Validation windows:", len(val_windows))
+
+if len(train_windows) == 0:
+    raise ValueError(
+        "No training windows were created. "
+        "You need at least 400 training days."
+    )
+
+if len(val_windows) == 0:
+    raise ValueError(
+        "No validation windows were created."
+    )
+
+
+# ================================================================
+# 22. TRAINING LOSS
+# ================================================================
+
+
+def calculate_loss(
+    s1_logits,
+    s2_logits,
+    s1_target,
+    s2_target
+):
+
+
+    # Shift because the model predicts next token.
+
+    s1_logits = s1_logits[
+        :, :-1, :
+    ]
+
+    s2_logits = s2_logits[
+        :, :-1, :
+    ]
+
+
+    s1_target = s1_target[
+        :, 1:
+    ]
+
+    s2_target = s2_target[
+        :, 1:
+    ]
+
+
+    loss_s1 = F.cross_entropy(
+        s1_logits.reshape(
+            -1,
+            s1_logits.size(-1)
+        ),
+        s1_target.reshape(-1)
+    )
+
+
+    loss_s2 = F.cross_entropy(
+        s2_logits.reshape(
+            -1,
+            s2_logits.size(-1)
+        ),
+        s2_target.reshape(-1)
+    )
+
+
+    loss = (
+        loss_s1
+        +
+        loss_s2
+    )
+
+
+    return loss
+
+
+# ================================================================
+# 23. TRAIN ONE EPOCH
+# ================================================================
+
+
+def train_one_epoch(
+    windows
+):
+
+    model.train()
+
+
+    total_loss = 0.0
+
+    used = 0
+
+
+    # Shuffle windows
+
+    indices = np.random.permutation(
+        len(windows)
+    )
+
+
+    for idx in indices:
+
+        window = windows[idx]
+
+
+        try:
+
+            s1_ids, s2_ids, stamp = tokenize_window(
+                window
+            )
+
+            # Hard device synchronization immediately before forward().
+            s1_ids = s1_ids.to(DEVICE)
+            s2_ids = s2_ids.to(DEVICE)
+            stamp = stamp.to(DEVICE)
+
+            optimizer.zero_grad(
+                set_to_none=True
+            )
+
+
+            try:
+                s1_logits, s2_logits = model(
+                    s1_ids,
+                    s2_ids,
+                    stamp=stamp,
+                    use_teacher_forcing=True,
+                    s1_targets=s1_ids,
+                )
+            except RuntimeError as e:
+                if "same device" in str(e).lower() or "cuda" in str(e).lower() and "cpu" in str(e).lower():
+                    print("\nDEVICE DEBUG:")
+                    print("DEVICE:", DEVICE)
+                    print("s1_ids:", s1_ids.device)
+                    print("s2_ids:", s2_ids.device)
+                    print("stamp:", stamp.device)
+                    print("model parameter devices:", sorted({str(p.device) for p in model.parameters()}))
+                raise
+
+
+            loss = calculate_loss(
+                s1_logits,
+                s2_logits,
+                s1_ids,
+                s2_ids
+            )
+
+
+            if not torch.isfinite(loss):
+
+                continue
+
+
+            loss.backward()
+
+
+            torch.nn.utils.clip_grad_norm_(
+                trainable_params,
+                GRAD_CLIP
+            )
+
+
+            optimizer.step()
+
+
+            total_loss += float(
+                loss.detach().cpu()
+            )
+
+            used += 1
+
+
+        except RuntimeError as e:
+
+            if "out of memory" in str(e).lower():
+
+                print(
+                    "WARNING: GPU memory issue."
+                )
+
+                if DEVICE == "cuda":
+
+                    torch.cuda.empty_cache()
+
+
+                continue
+
+
+            raise
+
+
+    if used == 0:
+
+        return float("inf")
+
+
+    return total_loss / used
+
+
+# ================================================================
+# 24. VALIDATION
+# ================================================================
+
+
+def validation_loss(
+    windows
+):
+
+    model.eval()
+
+
+    total_loss = 0.0
+
+    used = 0
+
+
+    with torch.no_grad():
+
+        for window in windows:
+
+            try:
+
+                s1_ids, s2_ids, stamp = tokenize_window(
+                    window
+                )
+
+                s1_ids = s1_ids.to(DEVICE)
+                s2_ids = s2_ids.to(DEVICE)
+                stamp = stamp.to(DEVICE)
+
+                s1_logits, s2_logits = model(
+                    s1_ids,
+                    s2_ids,
+                    stamp=stamp,
+                    use_teacher_forcing=True,
+                    s1_targets=s1_ids,
+                )
+
+
+                loss = calculate_loss(
+                    s1_logits,
+                    s2_logits,
+                    s1_ids,
+                    s2_ids
+                )
+
+
+                if torch.isfinite(loss):
+
+                    total_loss += float(
+                        loss.cpu()
+                    )
+
+                    used += 1
+
+
+            except RuntimeError:
+
+                if DEVICE == "cuda":
+
+                    torch.cuda.empty_cache()
+
+
+    if used == 0:
+
+        return float("inf")
+
+
+    return total_loss / used
+
+
+# ================================================================
+# 25. TRAIN LoRA
+# ================================================================
+
+
+print()
+print("=" * 80)
+print("STARTING LoRA TRAINING")
+print("=" * 80)
+
+
+history = []
+
+best_val_loss = float("inf")
+
+best_state = None
+
+patience_counter = 0
+
+
+for epoch in range(
+    1,
+    MAX_EPOCHS + 1
+):
+
+
+    train_loss = train_one_epoch(
+        train_windows
+    )
+
+
+    val_loss = validation_loss(
+        val_windows
+    )
+
+
+    history.append(
+        {
+            "epoch": epoch,
+            "train_loss": train_loss,
+            "validation_loss": val_loss
+        }
+    )
+
+
+    print()
+
+    print(
+        f"Epoch {epoch:02d}/{MAX_EPOCHS}"
+    )
+
+    print(
+        f"Train Loss      : {train_loss:.6f}"
+    )
+
+    print(
+        f"Validation Loss : {val_loss:.6f}"
+    )
+
+
+    # ------------------------------------------------------------
+    # Save best model
+    # ------------------------------------------------------------
+
+    if val_loss < best_val_loss:
+
+        best_val_loss = val_loss
+
+        patience_counter = 0
+
+        best_state = {
+            name: parameter.detach().cpu().clone()
+            for name, parameter
+            in model.named_parameters()
+            if parameter.requires_grad
+        }
+
+
+        print(
+            "BEST MODEL UPDATED"
+        )
+
+
+        torch.save(
+            {
+                "epoch": epoch,
+                "validation_loss": val_loss,
+                "lora_state_dict": best_state,
+                "lora_rank": LORA_RANK,
+                "lora_alpha": LORA_ALPHA,
+                "context_length": CONTEXT_LENGTH
+            },
+            os.path.join(
+                OUTPUT_DIR,
+                "best_lora_weights.pt"
+            )
+        )
+
+
+    else:
+
+        patience_counter += 1
+
+
+    # ------------------------------------------------------------
+    # Automatic early stopping
+    # ------------------------------------------------------------
+
+    if (
+        epoch >= MIN_EPOCHS
+        and
+        patience_counter >= PATIENCE
+    ):
+
+        print()
+
+        print(
+            "Early stopping triggered."
+        )
+
+        print(
+            "Validation loss stopped improving."
+        )
+
+        break
+
+
+# ================================================================
+# 26. SAVE TRAINING HISTORY
+# ================================================================
+
+
+history_df = pd.DataFrame(
+    history
+)
+
+
+history_file = os.path.join(
+    OUTPUT_DIR,
+    "training_history.csv"
+)
+
+
+history_df.to_csv(
+    history_file,
+    index=False
+)
+
+
+print()
+print(
+    "Training history saved:"
+)
+
+print(
+    history_file
+)
+
+
+# ================================================================
+# 27. RESTORE BEST LoRA WEIGHTS
+# ================================================================
+
+
+if best_state is not None:
+
+    for name, parameter in model.named_parameters():
+
+        if (
+            parameter.requires_grad
+            and
+            name in best_state
+        ):
+
+            parameter.data.copy_(
+                best_state[name].to(
+                    DEVICE
+                )
+            )
+
+
+# ================================================================
+# 28. SAVE FINAL LoRA WEIGHTS
+# ================================================================
+
+
+final_state = {
+    name: parameter.detach().cpu()
+    for name, parameter
+    in model.named_parameters()
+    if parameter.requires_grad
+}
+
+
+final_weights_file = os.path.join(
+    OUTPUT_DIR,
+    "final_lora_weights.pt"
+)
+
+
+torch.save(
+    {
+        "lora_state_dict": final_state,
+        "lora_rank": LORA_RANK,
+        "lora_alpha": LORA_ALPHA,
+        "context_length": CONTEXT_LENGTH
+    },
+    final_weights_file
+)
+
+
+print()
+print(
+    "Final LoRA weights saved:"
+)
+
+print(
+    final_weights_file
+)
+
+
+# ================================================================
+# 29. KRONOS PREDICTION
+# ================================================================
+
+
+print()
+print("=" * 80)
+print("GENERATING KRONOS PREDICTION")
+print("=" * 80)
+
+
+# ---------------------------------------------------------------
+# IMPORTANT:
+#
+# Use the 400 days immediately before test period
+# as Kronos context.
+# ---------------------------------------------------------------
+
+
+context_df = development_df.tail(
+    CONTEXT_LENGTH
+).copy()
+
+
+actual_df = test_df.copy()
+
+
+# ---------------------------------------------------------------
+# Create Kronos predictor
+# ---------------------------------------------------------------
+
+
+predictor = KronosPredictor(
+    model=model,
+    tokenizer=tokenizer,
+    device=DEVICE,
+    max_context=512
+)
+
+
+# ---------------------------------------------------------------
+# Prepare columns
+# ---------------------------------------------------------------
+
+
+prediction_input = context_df[
+    [
+        "open",
+        "high",
+        "low",
+        "close",
+        "volume"
+    ]
+].copy()
+
+
+x_timestamp = context_df[
+    "timestamp"
+].copy()
+
+
+y_timestamp = actual_df[
+    "timestamp"
+].copy()
+
+
+# ---------------------------------------------------------------
+# Predict
+# ---------------------------------------------------------------
+
+
+try:
+
+    pred_df = predictor.predict(
+        df=prediction_input,
+        x_timestamp=x_timestamp,
+        y_timestamp=y_timestamp,
+        pred_len=len(actual_df),
+        T=1.0,
+        top_p=0.9,
+        sample_count=1,
+        verbose=True
+    )
+
+
+except Exception as e:
+
+    print()
+    print(
+        "Kronos prediction failed:"
+    )
+
+    print(e)
+
+    raise
+
+
+# ================================================================
+# 30. CLEAN PREDICTIONS
+# ================================================================
+
+
+pred_df = pred_df.reset_index()
+
+pred_df = pred_df.rename(
+    columns={
+        "index": "timestamp"
+    }
+)
+
+
+if "timestamp" not in pred_df.columns:
+
+    pred_df["timestamp"] = (
+        y_timestamp.values
+    )
+
+
+pred_df["timestamp"] = pd.to_datetime(
+    pred_df["timestamp"]
+)
+
+
+# ================================================================
+# 31. ACTUAL + PREDICTION
+# ================================================================
+
+
+result = actual_df[
+    [
+        "timestamp",
+        "open",
+        "high",
+        "low",
+        "close",
+        "volume"
+    ]
+].copy()
+
+
+result = result.rename(
+    columns={
+        "open": "actual_open",
+        "high": "actual_high",
+        "low": "actual_low",
+        "close": "actual_close",
+        "volume": "actual_volume"
+    }
+)
+
+
+result = result.merge(
+    pred_df[
+        [
+            "timestamp",
+            "open",
+            "high",
+            "low",
+            "close"
+        ]
+    ],
+    on="timestamp",
+    how="left"
+)
+
+
+result = result.rename(
+    columns={
+        "open": "kronos_open",
+        "high": "kronos_high",
+        "low": "kronos_low",
+        "close": "kronos_close"
+    }
+)
+
+
+# ================================================================
+# 32. BASELINE
+# ================================================================
+
+
+# Naive baseline:
+#
+# Tomorrow's predicted close =
+# today's actual close.
+#
+# This is a standard simple benchmark.
+
+last_training_close = float(
+    context_df["close"].iloc[-1]
+)
+
+
+baseline_values = []
+
+previous_close = last_training_close
+
+
+for _ in range(
+    len(result)
+):
+
+    baseline_values.append(
+        previous_close
+    )
+
+
+    # For the next baseline point,
+    # use the actual previous close.
+
+    if len(baseline_values) <= len(result):
+
+        current_index = (
+            len(baseline_values) - 1
+        )
+
+        if current_index < len(result):
+
+            previous_close = float(
+                result.iloc[
+                    current_index
+                ]["actual_close"]
+            )
+
+
+result["baseline_close"] = (
+    baseline_values
+)
+
+
+# ================================================================
+# 33. DIVERGENCE
+# ================================================================
+
+
+result["kronos_divergence"] = (
+    result["kronos_close"]
+    -
+    result["actual_close"]
+)
+
+
+result["baseline_divergence"] = (
+    result["baseline_close"]
+    -
+    result["actual_close"]
+)
+
+
+result["kronos_error_pct"] = (
+    result["kronos_divergence"]
+    /
+    result["actual_close"]
+    *
+    100
+)
+
+
+# ================================================================
+# 34. METRICS
+# ================================================================
+
+
+actual = result[
+    "actual_close"
+].astype(float).values
+
+
+prediction = result[
+    "kronos_close"
+].astype(float).values
+
+
+baseline = result[
+    "baseline_close"
+].astype(float).values
+
+
+valid = (
+    np.isfinite(actual)
+    &
+    np.isfinite(prediction)
+)
+
+
+actual_valid = actual[valid]
+
+prediction_valid = prediction[valid]
+
+baseline_valid = baseline[valid]
+
+
+mae = np.mean(
+    np.abs(
+        prediction_valid
+        -
+        actual_valid
+    )
+)
+
+
+rmse = np.sqrt(
+    np.mean(
+        (
+            prediction_valid
+            -
+            actual_valid
+        ) ** 2
+    )
+)
+
+
+mape = np.mean(
+    np.abs(
+        (
+            prediction_valid
+            -
+            actual_valid
+        )
+        /
+        actual_valid
+    )
+) * 100
+
+
+baseline_mae = np.mean(
+    np.abs(
+        baseline_valid
+        -
+        actual_valid
+    )
+)
+
+
+baseline_rmse = np.sqrt(
+    np.mean(
+        (
+            baseline_valid
+            -
+            actual_valid
+        ) ** 2
+    )
+)
+
+
+print()
+print("=" * 80)
+print("FINAL RESULTS")
+print("=" * 80)
+
+
+print(
+    f"Kronos MAE       : {mae:.4f}"
+)
+
+print(
+    f"Kronos RMSE      : {rmse:.4f}"
+)
+
+print(
+    f"Kronos MAPE      : {mape:.4f}%"
+)
+
+print()
+
+print(
+    f"Baseline MAE     : {baseline_mae:.4f}"
+)
+
+print(
+    f"Baseline RMSE    : {baseline_rmse:.4f}"
+)
+
+
+# ================================================================
+# 35. SAVE PREDICTIONS
+# ================================================================
+
+
+prediction_file = os.path.join(
+    OUTPUT_DIR,
+    "predictions.csv"
+)
+
+
+result.to_csv(
+    prediction_file,
+    index=False
+)
+
+
+print()
+print(
+    "Prediction file:"
+)
+
+print(
+    prediction_file
+)
+
+
+# ================================================================
+# 36. CREATE PLOTLY DASHBOARD
+# ================================================================
+
+
+print()
+print("=" * 80)
+print("CREATING INTERACTIVE PLOTLY DASHBOARD")
+print("=" * 80)
+
+
+fig = make_subplots(
+    rows=4,
+    cols=1,
+    shared_xaxes=True,
+    vertical_spacing=0.04,
+    subplot_titles=[
+        "HCLTECH — 400-Day Training Context + Actual vs Kronos Prediction",
+        "Kronos vs Actual vs Baseline",
+        "Kronos Divergence",
+        "LoRA Training / Validation Loss"
+    ],
+    row_heights=[
+        0.42,
+        0.25,
+        0.18,
+        0.15
+    ]
+)
+
+
+# ================================================================
+# 37. TRAINING DATA
+# ================================================================
+
+
+fig.add_trace(
+    go.Scatter(
+        x=context_df["timestamp"],
+        y=context_df["close"],
+        mode="lines",
+        name="400-Day Training Close",
+        line=dict(
+            width=1
+        )
+    ),
+    row=1,
+    col=1
+)
+
+
+# ================================================================
+# 38. ACTUAL TEST
+# ================================================================
+
+
+fig.add_trace(
+    go.Scatter(
+        x=result["timestamp"],
+        y=result["actual_close"],
+        mode="lines",
+        name="Actual Close",
+        line=dict(
+            width=2
+        )
+    ),
+    row=1,
+    col=1
+)
+
+
+# ================================================================
+# 39. KRONOS PREDICTION
+# ================================================================
+
+
+fig.add_trace(
+    go.Scatter(
+        x=result["timestamp"],
+        y=result["kronos_close"],
+        mode="lines",
+        name="Kronos + LoRA Prediction",
+        line=dict(
+            width=2,
+            dash="dash"
+        )
+    ),
+    row=1,
+    col=1
+)
+
+
+# ================================================================
+# 40. BASELINE
+# ================================================================
+
+
+fig.add_trace(
+    go.Scatter(
+        x=result["timestamp"],
+        y=result["baseline_close"],
+        mode="lines",
+        name="Naive Baseline",
+        line=dict(
+            width=1,
+            dash="dot"
+        )
+    ),
+    row=2,
+    col=1
+)
+
+
+fig.add_trace(
+    go.Scatter(
+        x=result["timestamp"],
+        y=result["actual_close"],
+        mode="lines",
+        name="Actual",
+        line=dict(
+            width=2
+        )
+    ),
+    row=2,
+    col=1
+)
+
+
+fig.add_trace(
+    go.Scatter(
+        x=result["timestamp"],
+        y=result["kronos_close"],
+        mode="lines",
+        name="Kronos + LoRA",
+        line=dict(
+            width=2,
+            dash="dash"
+        )
+    ),
+    row=2,
+    col=1
+)
+
+
+# ================================================================
+# 41. DIVERGENCE
+# ================================================================
+
+
+fig.add_trace(
+    go.Scatter(
+        x=result["timestamp"],
+        y=result["kronos_divergence"],
+        mode="lines",
+        name="Kronos Divergence",
+        line=dict(
+            width=2
+        )
+    ),
+    row=3,
+    col=1
+)
+
+
+fig.add_hline(
+    y=0,
+    row=3,
+    col=1,
+    line_dash="dot"
+)
+
+
+# ================================================================
+# 42. TRAINING LOSS
+# ================================================================
+
+
+if len(history_df) > 0:
+
+    fig.add_trace(
+        go.Scatter(
+            x=history_df["epoch"],
+            y=history_df["train_loss"],
+            mode="lines+markers",
+            name="Training Loss"
+        ),
+        row=4,
+        col=1
+    )
+
+
+    fig.add_trace(
+        go.Scatter(
+            x=history_df["epoch"],
+            y=history_df["validation_loss"],
+            mode="lines+markers",
+            name="Validation Loss"
+        ),
+        row=4,
+        col=1
+    )
+
+
+# ================================================================
+# 43. LAYOUT
+# ================================================================
+
+
+fig.update_layout(
+    title=(
+        "HCLTECH — Kronos + LoRA "
+        "<br>"
+        "400-Day Context | Actual vs Prediction | "
+        "Baseline | Divergence | Training Loss"
+    ),
+    height=1400,
+    hovermode="x unified",
+    template="plotly_white",
+    legend=dict(
+        orientation="h",
+        yanchor="bottom",
+        y=1.01,
+        xanchor="left",
+        x=0
+    )
+)
+
+
+fig.update_yaxes(
+    title_text="Price",
+    row=1,
+    col=1
+)
+
+
+fig.update_yaxes(
+    title_text="Price",
+    row=2,
+    col=1
+)
+
+
+fig.update_yaxes(
+    title_text="Divergence",
+    row=3,
+    col=1
+)
+
+
+fig.update_yaxes(
+    title_text="Loss",
+    row=4,
+    col=1
+)
+
+
+fig.update_xaxes(
+    rangeslider_visible=True,
+    row=1,
+    col=1
+)
+
+
+# ================================================================
+# 44. SAVE HTML
+# ================================================================
+
+
+HTML_FILE = os.path.join(
+    OUTPUT_DIR,
+    "kronos_hcltech_dashboard.html"
+)
+
+
+fig.write_html(
+    HTML_FILE,
+    include_plotlyjs=True,
+    full_html=True
+)
+
+
+print()
+print(
+    "Plotly dashboard saved:"
+)
+
+print(
+    HTML_FILE
+)
+
+
+# ================================================================
+# 45. SAVE METRICS
+# ================================================================
+
+
+metrics = {
+
+    "device": DEVICE,
+
+    "context_days": CONTEXT_LENGTH,
+
+    "prediction_days": len(result),
+
+    "best_validation_loss": float(
+        best_val_loss
+    ),
+
+    "epochs_completed": len(
+        history_df
+    ),
+
+    "lora_rank": LORA_RANK,
+
+    "lora_alpha": LORA_ALPHA,
+
+    "trainable_parameters": trainable_count,
+
+    "total_parameters": total_params,
+
+    "trainable_percentage": (
+        100
+        *
+        trainable_count
+        /
+        total_params
+    ),
+
+    "kronos_mae": float(mae),
+
+    "kronos_rmse": float(rmse),
+
+    "kronos_mape": float(mape),
+
+    "baseline_mae": float(
+        baseline_mae
+    ),
+
+    "baseline_rmse": float(
+        baseline_rmse
+    ),
+
+    "training_start": str(
+        train_df["timestamp"].min()
+    ),
+
+    "training_end": str(
+        train_df["timestamp"].max()
+    ),
+
+    "test_start": str(
+        test_df["timestamp"].min()
+    ),
+
+    "test_end": str(
+        test_df["timestamp"].max()
+    )
+
+}
+
+
+metrics_file = os.path.join(
+    OUTPUT_DIR,
+    "metrics.json"
+)
+
+
+with open(
+    metrics_file,
+    "w"
+) as f:
+
+    json.dump(
+        metrics,
+        f,
+        indent=4
+    )
+
+
+# ================================================================
+# 46. FINAL OUTPUT
+# ================================================================
+
+
+print()
+print("=" * 80)
+print("PIPELINE FINISHED")
+print("=" * 80)
+
+print()
+
+print(
+    "OUTPUT DIRECTORY:"
+)
+
+print(
+    OUTPUT_DIR
+)
+
+print()
+
+print(
+    "BEST LoRA WEIGHTS:"
+)
+
+print(
+    os.path.join(
+        OUTPUT_DIR,
+        "best_lora_weights.pt"
+    )
+)
+
+print()
+
+print(
+    "FINAL LoRA WEIGHTS:"
+)
+
+print(
+    final_weights_file
+)
+
+print()
+
+print(
+    "PREDICTIONS:"
+)
+
+print(
+    prediction_file
+)
+
+print()
+
+print(
+    "TRAINING HISTORY:"
+)
+
+print(
+    history_file
+)
+
+print()
+
+print(
+    "METRICS:"
+)
+
+print(
+    metrics_file
+)
+
+print()
+
+print(
+    "PLOTLY DASHBOARD:"
+)
+
+print(
+    HTML_FILE
+)
+
+print()
+
+print("=" * 80)

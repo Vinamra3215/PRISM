@@ -34,6 +34,6 @@ yfinance_packages/
 *.png
 *.parquet
 
-#ignore kronos model
-Kronos-base/
-Kronos-Tokenizer-base/
+#ignore kronos model and other weights
+*.pth
+*.safetensors

@@ -1,0 +1,37 @@
+import pandas as pd
+
+# Read the dataset
+df = pd.read_parquet("RELIANCE_5Y_OHLCVdata.parquet")
+
+print("="*50)
+print("First 5 rows")
+print("="*50)
+print(df.head())
+
+print("\n")
+
+print("="*50)
+print("Last 5 rows")
+print("="*50)
+print(df.tail())
+
+print("\n")
+
+print("="*50)
+print("Dataset Shape")
+print("="*50)
+print(df.shape)
+
+print("\n")
+
+print("="*50)
+print("Index Type")
+print("="*50)
+print(type(df.index))
+
+print("\n")
+
+print("="*50)
+print("First 10 Dates")
+print("="*50)
+print(df.index[:10])

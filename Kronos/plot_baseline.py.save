@@ -1,0 +1,277 @@
+import pandas as pd
+import plotly.graph_objects as go
+from sklearn.metrics import mean_absolute_error, mean_squared_error
+import numpy as np
+
+# ============================================================
+# PATHS
+# ============================================================
+
+ACTUAL_FILE = "data/NIFTY50_5Y_OHLCV.parquet"
+FORECAST_FILE = "_results/NIFTY50_forecast.parquet"
+OUTPUT_FILE = "_results/nifty50_baseline_interactive.html"
+
+
+# ============================================================
+# 1. LOAD ACTUAL NIFTY DATA
+# ============================================================
+
+print("Loading actual NIFTY50 data...")
+
+actual = pd.read_parquet(ACTUAL_FILE)
+
+# MultiIndex handle
+if isinstance(actual.columns, pd.MultiIndex):
+    actual.columns = actual.columns.get_level_values(0)
+
+actual = actual.reset_index()
+
+print("Actual columns:", actual.columns.tolist())
+
+
+# ============================================================
+# 2. STANDARDIZE ACTUAL COLUMNS
+# ============================================================
+
+rename_map = {}
+
+for col in actual.columns:
+
+    c = str(col).lower()
+
+    if "date" in c or "time" in c:
+        rename_map[col] = "timestamp"
+
+    elif "open" in c:
+        rename_map[col] = "open"
+
+    elif "high" in c:
+        rename_map[col] = "high"
+
+    elif "low" in c:
+        rename_map[col] = "low"
+
+    elif "close" in c:
+        rename_map[col] = "close"
+
+    elif "volume" in c:
+        rename_map[col] = "volume"
+
+
+actual = actual.rename(columns=rename_map)
+
+actual["timestamp"] = pd.to_datetime(actual["timestamp"])
+
+actual = actual.sort_values("timestamp")
+
+actual = actual.reset_index(drop=True)
+
+
+# ============================================================
+# 3. LOAD KRONOS FORECAST
+# ============================================================
+
+print("\nLoading Kronos forecast...")
+
+forecast = pd.read_parquet(FORECAST_FILE)
+
+forecast = forecast.reset_index()
+
+print("Forecast columns:", forecast.columns.tolist())
+
+
+# ============================================================
+# 4. STANDARDIZE FORECAST COLUMNS
+# ============================================================
+
+rename_forecast = {}
+
+for col in forecast.columns:
+
+    c = str(col).lower()
+
+    if "date" in c or "time" in c:
+        rename_forecast[col] = "timestamp"
+
+    elif "close" in c:
+        rename_forecast[col] = "predicted_close"
+
+
+forecast = forecast.rename(columns=rename_forecast)
+
+forecast["timestamp"] = pd.to_datetime(
+    forecast["timestamp"]
+)
+
+forecast = forecast.sort_values("timestamp")
+
+
+# ============================================================
+# 5. MATCH ACTUAL VS PREDICTED
+# ============================================================
+
+print("\nMatching actual and predicted data...")
+
+comparison = pd.merge(
+    forecast[["timestamp", "predicted_close"]],
+    actual[["timestamp", "close"]],
+    on="timestamp",
+    how="inner"
+)
+
+comparison = comparison.dropna()
+
+comparison["error"] = (
+    comparison["close"]
+    - comparison["predicted_close"]
+)
+
+comparison["absolute_error"] = (
+    comparison["error"].abs()
+)
+
+
+print("\nMatched points:", len(comparison))
+
+
+# ============================================================
+# 6. METRICS
+# ============================================================
+
+if len(comparison) > 0:
+
+    mae = mean_absolute_error(
+        comparison["close"],
+        comparison["predicted_close"]
+    )
+
+    rmse = np.sqrt(
+        mean_squared_error(
+            comparison["close"],
+            comparison["predicted_close"]
+        )
+    )
+
+    mape = (
+        np.mean(
+            np.abs(
+                (
+                    comparison["close"]
+                    - comparison["predicted_close"]
+                )
+                / comparison["close"]
+            )
+        )
+        * 100
+    )
+
+    print("\n==============================")
+    print("BASELINE RESULTS")
+    print("==============================")
+
+    print(f"MAE  : {mae:.2f}")
+    print(f"RMSE : {rmse:.2f}")
+    print(f"MAPE : {mape:.2f}%")
+
+else:
+
+    print("\nNO MATCHING DATES FOUND.")
+
+    print("\nActual dates:")
+    print(actual["timestamp"].head())
+
+    print("\nForecast dates:")
+    print(forecast["timestamp"].head())
+
+    exit()
+
+
+# ============================================================
+# 7. CREATE INTERACTIVE GRAPH
+# ============================================================
+
+fig = go.Figure()
+
+
+# ACTUAL PRICE
+fig.add_trace(
+    go.Scatter(
+        x=comparison["timestamp"],
+        y=comparison["close"],
+        mode="lines",
+        name="Actual NIFTY50",
+        line=dict(width=2)
+    )
+)
+
+
+# KRONOS PREDICTION
+fig.add_trace(
+    go.Scatter(
+        x=comparison["timestamp"],
+        y=comparison["predicted_close"],
+        mode="lines",
+        name="Kronos Predicted",
+        line=dict(
+            width=2,
+            dash="dash"
+        )
+    )
+)
+
+
+# ============================================================
+# 8. GRAPH SETTINGS
+# ============================================================
+
+fig.update_layout(
+
+    title=(
+        "NIFTY50 Kronos Baseline: "
+        "Actual vs Predicted"
+    ),
+
+    xaxis_title="Date",
+
+    yaxis_title="NIFTY50 Close Price",
+
+    hovermode="x unified",
+
+    template="plotly_white",
+
+    width=1400,
+
+    height=700,
+
+    legend=dict(
+        orientation="h",
+        yanchor="bottom",
+        y=1.02,
+        xanchor="center",
+        x=0.5
+    ),
+
+    xaxis=dict(
+        rangeslider=dict(
+            visible=True
+        ),
+
+        type="date"
+    )
+)
+
+
+# ============================================================
+# 9. SAVE HTML
+# ============================================================
+
+fig.write_html(OUTPUT_FILE)
+
+print("\n==============================")
+print("GRAPH CREATED SUCCESSFULLY")
+print("==============================")
+
+print(
+    f"Saved here:\n{OUTPUT_FILE}"
+)
+

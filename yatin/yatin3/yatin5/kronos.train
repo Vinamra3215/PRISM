@@ -1,0 +1,1804 @@
+import os
+import sys
+import math
+import json
+import random
+
+import numpy as np
+import pandas as pd
+import torch
+import torch.nn as nn
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+from tqdm import tqdm
+
+
+# ============================================================
+# PATHS
+# ============================================================
+
+PROJECT_ROOT = "/home/soq/yatin3"
+
+DATA_PATH = os.path.join(
+    PROJECT_ROOT,
+    "HCLTECH_clean.parquet"
+)
+
+RESULTS_DIR = os.path.join(
+    PROJECT_ROOT,
+    "results"
+)
+
+PLOTS_DIR = os.path.join(
+    PROJECT_ROOT,
+    "plots"
+)
+
+os.makedirs(RESULTS_DIR, exist_ok=True)
+os.makedirs(PLOTS_DIR, exist_ok=True)
+
+
+# ============================================================
+# KRONOS
+# ============================================================
+
+KRONOS_ROOT = "/home/soq/Kronos"
+
+sys.path.insert(0, KRONOS_ROOT)
+
+from model import Kronos, KronosTokenizer
+from model.kronos import sample_from_logits
+
+
+# ============================================================
+# PRETRAINED MODEL
+# ============================================================
+
+MODEL_PATH = (
+    "/home/soq/__shutupandbendover/"
+    "het-uchiha/weights/Kronos-base"
+)
+
+TOKENIZER_PATH = (
+    "/home/soq/__shutupandbendover/"
+    "het-uchiha/weights/Kronos-Tokenizer-base"
+)
+
+
+# ============================================================
+# EXPERIMENT SETTINGS
+# ============================================================
+
+CUTOFF_DATE = "2022-01-01"
+
+TRAIN_DAYS = 400
+
+MAX_CONTEXT = 512
+
+CLIP = 5.0
+
+
+# ============================================================
+# LORA SETTINGS
+# ============================================================
+
+LORA_RANK = 8
+
+LORA_ALPHA = 16
+
+LORA_DROPOUT = 0.05
+
+
+# ============================================================
+# TRAINING SETTINGS
+# ============================================================
+
+EPOCHS = 20
+
+LEARNING_RATE = 1e-4
+
+WEIGHT_DECAY = 1e-4
+
+GRAD_CLIP = 1.0
+
+
+# ============================================================
+# FORECAST SETTINGS
+# ============================================================
+
+TEMPERATURE = 1.0
+
+TOP_K = 0
+
+TOP_P = 0.90
+
+
+# ============================================================
+# DEVICE
+# ============================================================
+
+if torch.cuda.is_available():
+
+    DEVICE = torch.device("cuda:0")
+
+else:
+
+    DEVICE = torch.device("cpu")
+
+
+print()
+print("=" * 80)
+print("KRONOS + LoRA : HCLTECH")
+print("=" * 80)
+
+print("DEVICE:", DEVICE)
+
+if torch.cuda.is_available():
+
+    print(
+        "GPU:",
+        torch.cuda.get_device_name(0)
+    )
+
+    print(
+        "CUDA:",
+        torch.version.cuda
+    )
+
+print("=" * 80)
+
+
+# ============================================================
+# SEED
+# ============================================================
+
+SEED = 42
+
+random.seed(SEED)
+
+np.random.seed(SEED)
+
+torch.manual_seed(SEED)
+
+if torch.cuda.is_available():
+
+    torch.cuda.manual_seed_all(SEED)
+
+
+# ============================================================
+# LoRA LINEAR
+# ============================================================
+
+class LoRALinear(nn.Module):
+
+    def __init__(
+        self,
+        base_linear,
+        rank=8,
+        alpha=16,
+        dropout=0.05
+    ):
+
+        super().__init__()
+
+        self.base = base_linear
+
+        # Freeze pretrained linear
+        for p in self.base.parameters():
+
+            p.requires_grad = False
+
+        self.rank = rank
+
+        self.alpha = alpha
+
+        self.scaling = alpha / rank
+
+        self.lora_A = nn.Parameter(
+            torch.empty(
+                rank,
+                base_linear.in_features
+            )
+        )
+
+        self.lora_B = nn.Parameter(
+            torch.zeros(
+                base_linear.out_features,
+                rank
+            )
+        )
+
+        nn.init.kaiming_uniform_(
+            self.lora_A,
+            a=math.sqrt(5)
+        )
+
+        self.dropout = nn.Dropout(
+            dropout
+        )
+
+    def forward(self, x):
+
+        base_output = self.base(x)
+
+        lora_output = self.dropout(x)
+
+        lora_output = (
+            lora_output
+            @ self.lora_A.t()
+        )
+
+        lora_output = (
+            lora_output
+            @ self.lora_B.t()
+        )
+
+        return (
+            base_output
+            + self.scaling * lora_output
+        )
+
+
+# ============================================================
+# LORA INJECTION
+# ============================================================
+
+def inject_lora(module):
+
+    count = 0
+
+    for name, child in list(
+        module.named_children()
+    ):
+
+        if isinstance(
+            child,
+            nn.Linear
+        ):
+
+            new_layer = LoRALinear(
+                child,
+                rank=LORA_RANK,
+                alpha=LORA_ALPHA,
+                dropout=LORA_DROPOUT
+            )
+
+            setattr(
+                module,
+                name,
+                new_layer
+            )
+
+            count += 1
+
+        else:
+
+            count += inject_lora(
+                child
+            )
+
+    return count
+
+
+# ============================================================
+# FREEZE EVERYTHING
+# ============================================================
+
+def freeze_all(model):
+
+    for p in model.parameters():
+
+        p.requires_grad = False
+
+
+# ============================================================
+# ENABLE LoRA
+# ============================================================
+
+def enable_lora(model):
+
+    count = 0
+
+    for module in model.modules():
+
+        if isinstance(
+            module,
+            LoRALinear
+        ):
+
+            module.lora_A.requires_grad = True
+
+            module.lora_B.requires_grad = True
+
+            count += (
+                module.lora_A.numel()
+                +
+                module.lora_B.numel()
+            )
+
+    return count
+
+
+# ============================================================
+# TIMESTAMP
+# ============================================================
+
+def make_timestamps(
+    dates
+):
+
+    dates = pd.to_datetime(
+        dates
+    )
+
+    result = pd.DataFrame()
+
+    result["minute"] = dates.dt.minute
+
+    result["hour"] = dates.dt.hour
+
+    result["weekday"] = dates.dt.weekday
+
+    result["day"] = dates.dt.day
+
+    result["month"] = dates.dt.month
+
+    return result
+
+
+# ============================================================
+# LOAD DATA
+# ============================================================
+
+print()
+print("=" * 80)
+print("LOADING HCLTECH DATA")
+print("=" * 80)
+
+df = pd.read_parquet(
+    DATA_PATH
+)
+
+df["Date"] = pd.to_datetime(
+    df["Date"]
+)
+
+df = (
+    df
+    .sort_values("Date")
+    .drop_duplicates()
+    .reset_index(drop=True)
+)
+
+required_columns = [
+    "Date",
+    "Open",
+    "High",
+    "Low",
+    "Close",
+    "Volume"
+]
+
+df = df[
+    required_columns
+].copy()
+
+df = df.dropna(
+    subset=[
+        "Open",
+        "High",
+        "Low",
+        "Close",
+        "Volume"
+    ]
+)
+
+print("ROWS:", len(df))
+
+print(
+    "START:",
+    df["Date"].min()
+)
+
+print(
+    "END:",
+    df["Date"].max()
+)
+
+
+# ============================================================
+# TRAIN / PREDICTION SPLIT
+# ============================================================
+
+before_cutoff = df[
+    df["Date"] < CUTOFF_DATE
+].copy()
+
+future = df[
+    df["Date"] >= CUTOFF_DATE
+].copy()
+
+
+if len(before_cutoff) < TRAIN_DAYS:
+
+    raise RuntimeError(
+        "Less than 400 trading days before "
+        "2022-01-01."
+    )
+
+
+# EXACT LAST 400 DAYS BEFORE 2022
+
+train_df = before_cutoff.iloc[
+    -TRAIN_DAYS:
+].copy()
+
+
+# ============================================================
+# PRINT WINDOWS
+# ============================================================
+
+print()
+print("=" * 80)
+print("TRAINING WINDOW")
+print("=" * 80)
+
+print(
+    "DAYS:",
+    len(train_df)
+)
+
+print(
+    "START:",
+    train_df["Date"].iloc[0]
+)
+
+print(
+    "END:",
+    train_df["Date"].iloc[-1]
+)
+
+
+print()
+print("=" * 80)
+print("PREDICTION WINDOW")
+print("=" * 80)
+
+print(
+    "START:",
+    future["Date"].iloc[0]
+)
+
+print(
+    "END:",
+    future["Date"].iloc[-1]
+)
+
+print(
+    "PREDICTION ROWS:",
+    len(future)
+)
+
+
+# ============================================================
+# MODEL DATA
+# ============================================================
+
+def prepare_model_data(data):
+
+    x = data[
+        [
+            "Open",
+            "High",
+            "Low",
+            "Close",
+            "Volume"
+        ]
+    ].copy()
+
+    # Kronos expects amount when using OHLCV+amount
+    x["Amount"] = (
+        x["Volume"]
+        *
+        (
+            x["Open"]
+            +
+            x["High"]
+            +
+            x["Low"]
+            +
+            x["Close"]
+        )
+        / 4.0
+    )
+
+    return x
+
+
+train_values = prepare_model_data(
+    train_df
+)
+
+
+# ============================================================
+# NORMALIZATION
+# ============================================================
+
+train_array = train_values.values.astype(
+    np.float32
+)
+
+train_mean = train_array.mean(
+    axis=0
+)
+
+train_std = train_array.std(
+    axis=0
+)
+
+train_std[
+    train_std < 1e-8
+] = 1.0
+
+train_normalized = (
+    train_array
+    -
+    train_mean
+) / train_std
+
+train_normalized = np.clip(
+    train_normalized,
+    -CLIP,
+    CLIP
+)
+
+
+# ============================================================
+# TIMESTAMPS
+# ============================================================
+
+train_stamp_np = make_timestamps(
+    train_df["Date"]
+).values.astype(
+    np.float32
+)
+
+
+# ============================================================
+# TORCH
+# ============================================================
+
+x_train = torch.tensor(
+    train_normalized,
+    dtype=torch.float32,
+    device=DEVICE
+).unsqueeze(0)
+
+stamp_train = torch.tensor(
+    train_stamp_np,
+    dtype=torch.float32,
+    device=DEVICE
+).unsqueeze(0)
+
+
+# ============================================================
+# LOAD TOKENIZER
+# ============================================================
+
+print()
+print("=" * 80)
+print("LOADING TOKENIZER")
+print("=" * 80)
+
+tokenizer = KronosTokenizer.from_pretrained(
+    TOKENIZER_PATH
+)
+
+tokenizer = tokenizer.to(
+    DEVICE
+)
+
+tokenizer.eval()
+
+
+# ============================================================
+# TOKENIZE 400 DAYS
+# ============================================================
+
+print(
+    "Encoding exactly 400 training days..."
+)
+
+with torch.no_grad():
+
+    s1_tokens, s2_tokens = tokenizer.encode(
+        x_train,
+        half=True
+    )
+
+
+print(
+    "S1:",
+    tuple(s1_tokens.shape)
+)
+
+print(
+    "S2:",
+    tuple(s2_tokens.shape)
+)
+
+
+# ============================================================
+# LOAD KRONOS
+# ============================================================
+
+print()
+print("=" * 80)
+print("LOADING KRONOS")
+print("=" * 80)
+
+model = Kronos.from_pretrained(
+    MODEL_PATH
+)
+
+# FIRST MOVE BASE MODEL TO GPU
+model = model.to(
+    DEVICE
+)
+
+model.eval()
+
+
+# ============================================================
+# FREEZE BASE MODEL
+# ============================================================
+
+freeze_all(
+    model
+)
+
+
+# ============================================================
+# INJECT LoRA
+# ============================================================
+
+print()
+print("=" * 80)
+print("INJECTING LoRA")
+print("=" * 80)
+
+lora_modules = inject_lora(
+    model
+)
+
+print(
+    "LoRA LINEAR MODULES:",
+    lora_modules
+)
+
+
+# ============================================================
+# VERY IMPORTANT FIX
+# ============================================================
+#
+# LoRA layers are CREATED AFTER model.to(cuda).
+#
+# Newly-created LoRA parameters initially live on CPU.
+#
+# Therefore we MUST move the complete model to CUDA AGAIN.
+#
+# This fixes:
+#
+# Expected all tensors to be on same device,
+# but found cuda:0 and cpu
+#
+# ============================================================
+
+model = model.to(
+    DEVICE
+)
+
+
+# ============================================================
+# ENABLE ONLY LoRA
+# ============================================================
+
+trainable_count = enable_lora(
+    model
+)
+
+print(
+    "TRAINABLE LoRA PARAMETERS:",
+    trainable_count
+)
+
+
+# ============================================================
+# DEVICE CHECK
+# ============================================================
+
+print()
+print(
+    "CHECKING TRAINABLE PARAMETER DEVICES..."
+)
+
+for name, p in model.named_parameters():
+
+    if p.requires_grad:
+
+        if p.device != DEVICE:
+
+            raise RuntimeError(
+                "\nDEVICE ERROR:\n"
+                + name
+                + " is on "
+                + str(p.device)
+                + " but expected "
+                + str(DEVICE)
+            )
+
+
+print(
+    "DEVICE CHECK: OK"
+)
+
+
+# ============================================================
+# OPTIMIZER
+# ============================================================
+
+trainable_parameters = [
+    p
+    for p in model.parameters()
+    if p.requires_grad
+]
+
+if len(
+    trainable_parameters
+) == 0:
+
+    raise RuntimeError(
+        "No trainable LoRA parameters found."
+    )
+
+
+optimizer = torch.optim.AdamW(
+    trainable_parameters,
+    lr=LEARNING_RATE,
+    weight_decay=WEIGHT_DECAY
+)
+
+
+# ============================================================
+# TRAIN
+# ============================================================
+
+print()
+print("=" * 80)
+print("STARTING LoRA TRAINING")
+print("=" * 80)
+
+history = []
+
+
+for epoch in range(
+    EPOCHS
+):
+
+    model.train()
+
+    optimizer.zero_grad(
+        set_to_none=True
+    )
+
+    # ----------------------------------------
+    # NEXT TOKEN TRAINING
+    # ----------------------------------------
+
+    input_s1 = s1_tokens[:, :-1]
+
+    input_s2 = s2_tokens[:, :-1]
+
+    target_s1 = s1_tokens[:, 1:]
+
+    target_s2 = s2_tokens[:, 1:]
+
+    stamp_input = (
+        stamp_train[:, :-1]
+    )
+
+    # ----------------------------------------
+    # FORWARD
+    # ----------------------------------------
+
+    s1_logits, s2_logits = model(
+        input_s1,
+        input_s2,
+        stamp_input,
+        use_teacher_forcing=True,
+        s1_targets=target_s1
+    )
+
+    # ----------------------------------------
+    # LOSS
+    # ----------------------------------------
+
+    loss, loss_s1, loss_s2 = (
+        model.head.compute_loss(
+            s1_logits,
+            s2_logits,
+            target_s1,
+            target_s2
+        )
+    )
+
+    loss.backward()
+
+    torch.nn.utils.clip_grad_norm_(
+        trainable_parameters,
+        GRAD_CLIP
+    )
+
+    optimizer.step()
+
+    loss_value = float(
+        loss.detach().cpu()
+    )
+
+    loss_s1_value = float(
+        loss_s1.detach().cpu()
+    )
+
+    loss_s2_value = float(
+        loss_s2.detach().cpu()
+    )
+
+    history.append(
+        {
+            "epoch": epoch + 1,
+            "training_loss": loss_value,
+            "s1_loss": loss_s1_value,
+            "s2_loss": loss_s2_value
+        }
+    )
+
+    print(
+        f"Epoch {epoch + 1:02d}/{EPOCHS} | "
+        f"Loss {loss_value:.6f} | "
+        f"S1 {loss_s1_value:.6f} | "
+        f"S2 {loss_s2_value:.6f}"
+    )
+
+
+# ============================================================
+# SAVE LoRA
+# ============================================================
+
+lora_checkpoint_path = os.path.join(
+    RESULTS_DIR,
+    "HCLTECH_LoRA.pt"
+)
+
+lora_state = {}
+
+for name, p in model.named_parameters():
+
+    if p.requires_grad:
+
+        lora_state[name] = (
+            p.detach()
+            .cpu()
+            .clone()
+        )
+
+
+torch.save(
+    {
+        "state_dict": lora_state,
+        "rank": LORA_RANK,
+        "alpha": LORA_ALPHA,
+        "dropout": LORA_DROPOUT,
+        "training_days": TRAIN_DAYS,
+        "training_start": str(
+            train_df["Date"].iloc[0]
+        ),
+        "training_end": str(
+            train_df["Date"].iloc[-1]
+        )
+    },
+    lora_checkpoint_path
+)
+
+
+# ============================================================
+# SAVE HISTORY
+# ============================================================
+
+history_df = pd.DataFrame(
+    history
+)
+
+history_path = os.path.join(
+    RESULTS_DIR,
+    "training_history.csv"
+)
+
+history_df.to_csv(
+    history_path,
+    index=False
+)
+
+
+# ============================================================
+# FORECAST DATES
+# ============================================================
+
+future_dates = (
+    future["Date"]
+    .reset_index(drop=True)
+)
+
+pred_len = len(
+    future_dates
+)
+
+future_stamp_np = make_timestamps(
+    future_dates
+).values.astype(
+    np.float32
+)
+
+
+# ============================================================
+# INITIAL TOKEN CONTEXT
+# ============================================================
+
+current_s1 = s1_tokens.clone()
+
+current_s2 = s2_tokens.clone()
+
+current_stamps = train_stamp_np.copy()
+
+
+# ============================================================
+# AUTOREGRESSIVE FORECAST
+# ============================================================
+
+print()
+print("=" * 80)
+print("STARTING FULL AUTOREGRESSIVE FORECAST")
+print("=" * 80)
+
+print(
+    "Prediction:",
+    future_dates.iloc[0],
+    "->",
+    future_dates.iloc[-1]
+)
+
+print(
+    "Total prediction points:",
+    pred_len
+)
+
+print()
+print(
+    "ACTUAL FUTURE PRICES ARE NOT USED "
+    "DURING FORECASTING."
+)
+
+
+generated_s1 = []
+
+generated_s2 = []
+
+
+model.eval()
+
+
+for i in tqdm(
+    range(pred_len),
+    desc="Forecasting"
+):
+
+    # --------------------------------------------------------
+    # KEEP ONLY LAST 512 TOKENS
+    # --------------------------------------------------------
+
+    window_start = max(
+        0,
+        current_s1.shape[1]
+        -
+        MAX_CONTEXT
+    )
+
+    input_s1 = current_s1[
+        :,
+        window_start:
+    ]
+
+    input_s2 = current_s2[
+        :,
+        window_start:
+    ]
+
+    input_stamps_np = (
+        current_stamps[
+            window_start:
+        ]
+    )
+
+    input_stamps = torch.tensor(
+        input_stamps_np,
+        dtype=torch.float32,
+        device=DEVICE
+    ).unsqueeze(0)
+
+    # --------------------------------------------------------
+    # S1
+    # --------------------------------------------------------
+
+    with torch.no_grad():
+
+        s1_logits, context = (
+            model.decode_s1(
+                input_s1,
+                input_s2,
+                input_stamps
+            )
+        )
+
+    next_s1_logits = (
+        s1_logits[:, -1, :]
+    )
+
+    next_s1 = sample_from_logits(
+        next_s1_logits,
+        temperature=TEMPERATURE,
+        top_k=TOP_K,
+        top_p=TOP_P,
+        sample_logits=True
+    )
+
+    # --------------------------------------------------------
+    # S2
+    # --------------------------------------------------------
+
+    with torch.no_grad():
+
+        s2_logits = model.decode_s2(
+            context,
+            next_s1
+        )
+
+    next_s2_logits = (
+        s2_logits[:, -1, :]
+    )
+
+    next_s2 = sample_from_logits(
+        next_s2_logits,
+        temperature=TEMPERATURE,
+        top_k=TOP_K,
+        top_p=TOP_P,
+        sample_logits=True
+    )
+
+    # --------------------------------------------------------
+    # STORE
+    # --------------------------------------------------------
+
+    generated_s1.append(
+        next_s1.item()
+    )
+
+    generated_s2.append(
+        next_s2.item()
+    )
+
+    # --------------------------------------------------------
+    # APPEND GENERATED TOKEN
+    # --------------------------------------------------------
+
+    current_s1 = torch.cat(
+        [
+            current_s1,
+            next_s1
+        ],
+        dim=1
+    )
+
+    current_s2 = torch.cat(
+        [
+            current_s2,
+            next_s2
+        ],
+        dim=1
+    )
+
+    # --------------------------------------------------------
+    # APPEND ONLY FUTURE TIMESTAMP
+    #
+    # IMPORTANT:
+    # We append the date/time.
+    # We DO NOT append actual OHLCV.
+    # --------------------------------------------------------
+
+    current_stamps = np.vstack(
+        [
+            current_stamps,
+            future_stamp_np[i]
+        ]
+    )
+
+
+# ============================================================
+# FULL TOKEN SEQUENCES
+# ============================================================
+
+generated_s1_tensor = torch.tensor(
+    generated_s1,
+    dtype=torch.long,
+    device=DEVICE
+).unsqueeze(0)
+
+generated_s2_tensor = torch.tensor(
+    generated_s2,
+    dtype=torch.long,
+    device=DEVICE
+).unsqueeze(0)
+
+
+full_s1 = torch.cat(
+    [
+        s1_tokens,
+        generated_s1_tensor
+    ],
+    dim=1
+)
+
+full_s2 = torch.cat(
+    [
+        s2_tokens,
+        generated_s2_tensor
+    ],
+    dim=1
+)
+
+
+# ============================================================
+# DECODE PREDICTIONS
+# ============================================================
+
+print()
+print("=" * 80)
+print("DECODING FUTURE TOKENS")
+print("=" * 80)
+
+
+# Decode chunks.
+#
+# Each chunk gets enough previous context for the tokenizer.
+
+CHUNK_SIZE = 128
+
+decoded_chunks = []
+
+
+for start in tqdm(
+    range(
+        0,
+        pred_len,
+        CHUNK_SIZE
+    ),
+    desc="Decoding"
+):
+
+    end = min(
+        start + CHUNK_SIZE,
+        pred_len
+    )
+
+    absolute_start = (
+        TRAIN_DAYS
+        + start
+    )
+
+    absolute_end = (
+        TRAIN_DAYS
+        + end
+    )
+
+    decode_start = max(
+        0,
+        absolute_start
+        -
+        MAX_CONTEXT
+    )
+
+    token_s1 = full_s1[
+        :,
+        decode_start:
+        absolute_end
+    ]
+
+    token_s2 = full_s2[
+        :,
+        decode_start:
+        absolute_end
+    ]
+
+    with torch.no_grad():
+
+        decoded = tokenizer.decode(
+            [
+                token_s1,
+                token_s2
+            ],
+            half=True
+        )
+
+    local_start = (
+        absolute_start
+        -
+        decode_start
+    )
+
+    local_end = (
+        absolute_end
+        -
+        decode_start
+    )
+
+    decoded_chunks.append(
+        decoded[
+            :,
+            local_start:
+            local_end,
+            :
+        ]
+        .detach()
+        .cpu()
+        .numpy()
+    )
+
+
+pred_normalized = np.concatenate(
+    decoded_chunks,
+    axis=1
+)
+
+pred_normalized = (
+    pred_normalized[0]
+)
+
+
+# ============================================================
+# INVERSE NORMALIZATION
+# ============================================================
+
+pred_values = (
+    pred_normalized
+    *
+    train_std
+    +
+    train_mean
+)
+
+
+# ============================================================
+# PREDICTION DATAFRAME
+# ============================================================
+
+prediction_df = pd.DataFrame(
+    pred_values,
+    columns=[
+        "Open_Pred",
+        "High_Pred",
+        "Low_Pred",
+        "Close_Pred",
+        "Volume_Pred",
+        "Amount_Pred"
+    ]
+)
+
+prediction_df["Date"] = (
+    future_dates.values
+)
+
+
+# ============================================================
+# ACTUAL DATA
+# ============================================================
+
+actual_df = future[
+    [
+        "Date",
+        "Open",
+        "High",
+        "Low",
+        "Close",
+        "Volume"
+    ]
+].copy()
+
+
+# ============================================================
+# COMBINE
+# ============================================================
+
+result = actual_df.merge(
+    prediction_df,
+    on="Date",
+    how="left"
+)
+
+
+# ============================================================
+# BASELINE
+# ============================================================
+
+last_train_close = float(
+    train_df["Close"].iloc[-1]
+)
+
+result["Baseline"] = (
+    last_train_close
+)
+
+
+# ============================================================
+# DIVERGENCE
+# ============================================================
+
+result["Divergence"] = (
+    result["Close_Pred"]
+    -
+    result["Close"]
+)
+
+result["Divergence_Pct"] = (
+    result["Divergence"]
+    /
+    result["Close"]
+    *
+    100.0
+)
+
+
+# ============================================================
+# METRICS
+# ============================================================
+
+valid = result[
+    [
+        "Close",
+        "Close_Pred"
+    ]
+].dropna()
+
+
+mae = np.mean(
+    np.abs(
+        valid["Close"]
+        -
+        valid["Close_Pred"]
+    )
+)
+
+rmse = np.sqrt(
+    np.mean(
+        (
+            valid["Close"]
+            -
+            valid["Close_Pred"]
+        )
+        ** 2
+    )
+)
+
+mape = np.mean(
+    np.abs(
+        (
+            valid["Close"]
+            -
+            valid["Close_Pred"]
+        )
+        /
+        valid["Close"]
+    )
+) * 100.0
+
+
+baseline_mae = np.mean(
+    np.abs(
+        valid["Close"]
+        -
+        last_train_close
+    )
+)
+
+
+# ============================================================
+# SAVE PREDICTIONS
+# ============================================================
+
+prediction_path = os.path.join(
+    RESULTS_DIR,
+    "HCLTECH_predictions.parquet"
+)
+
+result.to_parquet(
+    prediction_path,
+    index=False
+)
+
+
+# ============================================================
+# SAVE METRICS
+# ============================================================
+
+metrics = {
+
+    "training_days": TRAIN_DAYS,
+
+    "training_start": str(
+        train_df["Date"].iloc[0]
+    ),
+
+    "training_end": str(
+        train_df["Date"].iloc[-1]
+    ),
+
+    "prediction_start": str(
+        future_dates.iloc[0]
+    ),
+
+    "prediction_end": str(
+        future_dates.iloc[-1]
+    ),
+
+    "prediction_points": pred_len,
+
+    "mae": float(mae),
+
+    "rmse": float(rmse),
+
+    "mape_percent": float(mape),
+
+    "baseline_mae": float(
+        baseline_mae
+    ),
+
+    "last_training_close": last_train_close
+}
+
+
+metrics_path = os.path.join(
+    RESULTS_DIR,
+    "metrics.json"
+)
+
+with open(
+    metrics_path,
+    "w"
+) as f:
+
+    json.dump(
+        metrics,
+        f,
+        indent=4
+    )
+
+
+# ============================================================
+# PLOT
+# ============================================================
+
+print()
+print("=" * 80)
+print("CREATING INTERACTIVE PLOT")
+print("=" * 80)
+
+
+fig = make_subplots(
+    rows=3,
+    cols=1,
+    shared_xaxes=True,
+    vertical_spacing=0.05,
+    row_heights=[
+        0.62,
+        0.23,
+        0.15
+    ],
+    subplot_titles=[
+        "HCLTECH — Actual vs Kronos + LoRA vs Baseline",
+        "Prediction Divergence",
+        "LoRA Training Loss"
+    ]
+)
+
+
+# ============================================================
+# ACTUAL
+# ============================================================
+
+fig.add_trace(
+    go.Scatter(
+        x=result["Date"],
+        y=result["Close"],
+        mode="lines",
+        name="Actual Close"
+    ),
+    row=1,
+    col=1
+)
+
+
+# ============================================================
+# PREDICTION
+# ============================================================
+
+fig.add_trace(
+    go.Scatter(
+        x=result["Date"],
+        y=result["Close_Pred"],
+        mode="lines",
+        name="Kronos + LoRA"
+    ),
+    row=1,
+    col=1
+)
+
+
+# ============================================================
+# BASELINE
+# ============================================================
+
+fig.add_trace(
+    go.Scatter(
+        x=result["Date"],
+        y=result["Baseline"],
+        mode="lines",
+        name="Baseline",
+        line=dict(
+            dash="dot"
+        )
+    ),
+    row=1,
+    col=1
+)
+
+
+# ============================================================
+# DIVERGENCE
+# ============================================================
+
+fig.add_trace(
+    go.Scatter(
+        x=result["Date"],
+        y=result["Divergence"],
+        mode="lines",
+        name="Divergence"
+    ),
+    row=2,
+    col=1
+)
+
+
+fig.add_hline(
+    y=0,
+    row=2,
+    col=1
+)
+
+
+# ============================================================
+# TRAINING LOSS
+# ============================================================
+
+fig.add_trace(
+    go.Scatter(
+        x=history_df["epoch"],
+        y=history_df["training_loss"],
+        mode="lines+markers",
+        name="Training Loss"
+    ),
+    row=3,
+    col=1
+)
+
+
+# ============================================================
+# 2022 MARKER
+# ============================================================
+
+fig.add_vline(
+    x=pd.Timestamp(
+        CUTOFF_DATE
+    ),
+    line_dash="dash",
+    row=1,
+    col=1
+)
+
+
+fig.add_vline(
+    x=pd.Timestamp(
+        CUTOFF_DATE
+    ),
+    line_dash="dash",
+    row=2,
+    col=1
+)
+
+
+# ============================================================
+# LAYOUT
+# ============================================================
+
+fig.update_layout(
+
+    title=(
+        "HCLTECH — Kronos + LoRA | "
+        "400 Training Days Before 2022 | "
+        "Full Forecast From 2022"
+    ),
+
+    height=1000,
+
+    hovermode="x unified",
+
+    template="plotly_white",
+
+    margin=dict(
+        l=70,
+        r=40,
+        t=100,
+        b=60
+    )
+)
+
+
+# ============================================================
+# ZOOM / RANGE SLIDER
+# ============================================================
+
+fig.update_xaxes(
+    rangeslider_visible=True,
+    showgrid=True,
+    row=1,
+    col=1
+)
+
+fig.update_xaxes(
+    showgrid=True,
+    row=2,
+    col=1
+)
+
+fig.update_xaxes(
+    title_text="Training Epoch",
+    showgrid=True,
+    row=3,
+    col=1
+)
+
+
+# ============================================================
+# AXIS LABELS
+# ============================================================
+
+fig.update_yaxes(
+    title_text="HCLTECH Price",
+    row=1,
+    col=1
+)
+
+fig.update_yaxes(
+    title_text="Prediction - Actual",
+    row=2,
+    col=1
+)
+
+fig.update_yaxes(
+    title_text="Loss",
+    row=3,
+    col=1
+)
+
+
+# ============================================================
+# SAVE GRAPH
+# ============================================================
+
+plot_path = os.path.join(
+    PLOTS_DIR,
+    "HCLTECH_Kronos_LoRA.html"
+)
+
+fig.write_html(
+    plot_path,
+    include_plotlyjs=True,
+    full_html=True
+)
+
+
+# ============================================================
+# FINAL
+# ============================================================
+
+print()
+print("=" * 80)
+print("COMPLETE")
+print("=" * 80)
+
+print()
+
+print(
+    "TRAINING:",
+    train_df["Date"].iloc[0],
+    "->",
+    train_df["Date"].iloc[-1]
+)
+
+print(
+    "TRAINING DAYS:",
+    TRAIN_DAYS
+)
+
+print()
+
+print(
+    "PREDICTION:",
+    future_dates.iloc[0],
+    "->",
+    future_dates.iloc[-1]
+)
+
+print(
+    "PREDICTION POINTS:",
+    pred_len
+)
+
+print()
+
+print(
+    "MAE:",
+    mae
+)
+
+print(
+    "RMSE:",
+    rmse
+)
+
+print(
+    "MAPE:",
+    mape,
+    "%"
+)
+
+print()
+
+print(
+    "PREDICTIONS:",
+    prediction_path
+)
+
+print(
+    "METRICS:",
+    metrics_path
+)
+
+print(
+    "HISTORY:",
+    history_path
+)
+
+print(
+    "GRAPH:",
+    plot_path
+)
+
+print()
+print("=" * 80)
