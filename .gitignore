@@ -27,7 +27,7 @@ yfinance_packages/
 .bashrc
 .lesshst
 .profile
-.python-history
+.python_history
 .wget-hsts
 
 #file formats
