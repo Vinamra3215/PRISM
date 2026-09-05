@@ -1,0 +1,553 @@
+import argparse
+import copy
+import gc
+import json
+import math
+import os
+import random
+import sys
+import time
+from pathlib import Path
+
+import numpy as np
+import optuna
+import pandas as pd
+import plotly.graph_objects as go
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from plotly.subplots import make_subplots
+from torch.utils.data import DataLoader, TensorDataset
+
+PROJECT_DIR = Path(__file__).resolve().parent
+PRICE_COLUMNS = ["open", "high", "low", "close"]
+FEATURE_COLUMNS = PRICE_COLUMNS + ["volume", "amount"]
+LORA_TARGETS = ("q_proj", "k_proj", "v_proj", "out_proj")
+
+WINDOW_SIZE = 236  # Exact 236-day training window
+STEP_SIZE = 1      # 1-day step shift
+
+optuna.logging.set_verbosity(optuna.logging.WARNING)
+
+
+# ---------------------------------------------------------------------------
+# CLI & Setup
+# ---------------------------------------------------------------------------
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="True 236-day rolling walk-forward LoRA fine-tuning for Kronos."
+    )
+    parser.add_argument("--ticker", default="^NSEI")
+    parser.add_argument("--start", default="2022-01-01")
+    parser.add_argument("--end", default=None)
+    parser.add_argument("--data-file", default="/home/soq/NIFTY50_5Y_OHLCV.parquet",
+                        help="Path to local NIFTY 50 Parquet/CSV file.")
+    parser.add_argument("--trials", type=int, default=5, help="Optuna trials on calibration window.")
+    parser.add_argument("--timeout", type=int, default=None)
+    parser.add_argument("--sequence-length", type=int, default=64, help="Sequence length inside training window.")
+    parser.add_argument("--window-stride", type=int, default=8)
+    parser.add_argument("--sample-count", type=int, default=5)
+    parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--device", default=None)
+    parser.add_argument("--kronos-repo", default=None)
+    parser.add_argument("--model-path", default=None)
+    parser.add_argument("--tokenizer-path", default=None)
+    parser.add_argument("--output-html", default=str(PROJECT_DIR / "kronos_lora_daily_forecast.html"))
+    parser.add_argument("--output-png", default=str(PROJECT_DIR / "kronos_lora_daily_forecast.png"))
+    parser.add_argument("--study-output", default=str(PROJECT_DIR / "kronos_lora_optuna_trials.csv"))
+    return parser.parse_args()
+
+
+def set_seed(seed):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+
+
+def resolve_device(requested):
+    if requested:
+        return torch.device(requested)
+    if torch.cuda.is_available():
+        return torch.device("cuda")
+    return torch.device("cpu")
+
+
+def configure_kronos_import(repo_override=None):
+    candidates = [
+        repo_override,
+        os.getenv("KRONOS_REPO"),
+        "/home/soq/Kronos",
+        str(PROJECT_DIR.parent.parent / "Kronos"),
+        str(Path.home() / "Kronos"),
+    ]
+    for candidate in candidates:
+        if candidate and (Path(candidate).expanduser() / "model" / "kronos.py").is_file():
+            repo = Path(candidate).expanduser().resolve()
+            sys.path.insert(0, str(repo))
+            from model import Kronos, KronosPredictor, KronosTokenizer
+            from model.kronos import calc_time_stamps
+            return Kronos, KronosPredictor, KronosTokenizer, calc_time_stamps
+    raise FileNotFoundError("Kronos repository not found. Pass --kronos-repo pointing to the Kronos repository.")
+
+
+def resolve_pretrained_path(explicit_path, directory_name, hub_id):
+    env_name = "KRONOS_TOKENIZER_PATH" if "Tokenizer" in directory_name else "KRONOS_MODEL_PATH"
+    candidates = [
+        explicit_path,
+        os.getenv(env_name),
+        "/home/soq/Kronos/kronos_checkpoints/" + directory_name,
+        PROJECT_DIR / "weights" / directory_name,
+    ]
+    for candidate in candidates:
+        if candidate and (Path(candidate).expanduser() / "config.json").is_file():
+            return str(Path(candidate).expanduser().resolve())
+    return hub_id
+
+
+# ---------------------------------------------------------------------------
+# Direct Server-Local Data Loader (Discovered via Screenshot File Tree)
+# ---------------------------------------------------------------------------
+def load_market_data(file_path="/home/soq/NIFTY50_5Y_OHLCV.parquet", start="2022-01-01", end=None):
+    candidate_paths = [
+        Path(file_path),
+        Path("/home/soq/NIFTY50_5Y_OHLCV.parquet"),
+        Path("/home/soq/data/NIFTY50_5Y_OHLCV.parquet"),
+        Path("/home/soq/data/nifty50.parquet"),
+        Path("/home/soq/data/nifty50.csv")
+    ]
+
+    selected_file = None
+    for p in candidate_paths:
+        if p.is_file():
+            selected_file = p
+            break
+
+    if selected_file is None:
+        raise FileNotFoundError(
+            f"Could not locate local market data file at {file_path}. "
+            "Please check the path in /home/soq/."
+        )
+
+    print(f"Loading local NIFTY 50 continuous data from: {selected_file}")
+    if str(selected_file).endswith(".parquet"):
+        df = pd.read_parquet(selected_file)
+    else:
+        df = pd.read_csv(selected_file)
+
+    if isinstance(df.columns, pd.MultiIndex):
+        df.columns = df.columns.get_level_values(0)
+    df.columns = [str(c).lower().strip() for c in df.columns]
+
+    # Timestamp standardization
+    time_col = None
+    for candidate in ["timestamp", "date", "datetime", "time"]:
+        if candidate in df.columns:
+            time_col = candidate
+            break
+
+    if time_col:
+        df["timestamp"] = pd.to_datetime(df[time_col]).dt.tz_localize(None)
+        df.set_index("timestamp", inplace=True)
+    elif not isinstance(df.index, pd.DatetimeIndex):
+        df.index = pd.to_datetime(df.index).tz_localize(None)
+
+    df = df.sort_index()
+
+    # Filter target dates
+    start_dt = pd.Timestamp(start)
+    df = df.loc[df.index >= start_dt]
+    if end:
+        end_dt = pd.Timestamp(end)
+        df = df.loc[df.index <= end_dt]
+
+    for col in PRICE_COLUMNS:
+        if col not in df.columns:
+            raise ValueError(f"Missing required price column: {col}")
+
+    if "volume" not in df.columns:
+        df["volume"] = 1.0
+
+    df = df[PRICE_COLUMNS + ["volume"]].astype(float).dropna()
+
+    if "amount" not in df.columns:
+        df["amount"] = df["volume"] * df[PRICE_COLUMNS].mean(axis=1)
+
+    print(
+        f"Successfully Loaded Trading Sessions: {len(df)} "
+        f"(Day 1: {df.index[0].date()} to Day {len(df)}: {df.index[-1].date()})"
+    )
+    return df
+
+
+# ---------------------------------------------------------------------------
+# Custom LoRA Implementation (Base Weights Frozen)
+# ---------------------------------------------------------------------------
+class LoRALinear(nn.Module):
+    def __init__(self, base_layer, rank, alpha, dropout):
+        super().__init__()
+        self.base = base_layer
+        self.scaling = alpha / rank
+        self.lora_A = nn.Parameter(torch.empty(rank, base_layer.in_features))
+        self.lora_B = nn.Parameter(torch.zeros(base_layer.out_features, rank))
+        self.dropout = nn.Dropout(dropout) if dropout else nn.Identity()
+        nn.init.kaiming_uniform_(self.lora_A, a=math.sqrt(5))
+        for p in self.base.parameters():
+            p.requires_grad = False
+
+    def forward(self, inputs):
+        update = self.dropout(inputs) @ self.lora_A.t() @ self.lora_B.t()
+        return self.base(inputs) + self.scaling * update
+
+
+def inject_lora(model, rank, alpha, dropout):
+    for p in model.parameters():
+        p.requires_grad = False
+    trainable = []
+    for block in model.transformer:
+        attn = block.self_attn
+        for target in LORA_TARGETS:
+            base_layer = getattr(attn, target)
+            adapter = LoRALinear(base_layer, rank, alpha, dropout)
+            setattr(attn, target, adapter)
+            trainable.extend([adapter.lora_A, adapter.lora_B])
+    return trainable
+
+
+# ---------------------------------------------------------------------------
+# Dataset & Training Helpers
+# ---------------------------------------------------------------------------
+def prepare_windows(frame, sequence_length, stride, calc_time_stamps):
+    values = frame[FEATURE_COLUMNS].to_numpy(dtype=np.float32)
+    timestamps = pd.Series(frame.index)
+    norm_windows, stamp_windows = [], []
+    final_start = len(frame) - sequence_length
+    starts = list(range(0, final_start + 1, stride))
+    if starts[-1] != final_start:
+        starts.append(final_start)
+    for s in starts:
+        e = s + sequence_length
+        window = values[s:e]
+        mean = window.mean(axis=0)
+        std = window.std(axis=0)
+        norm_windows.append(np.clip((window - mean) / (std + 1e-5), -5, 5))
+        wt = timestamps.iloc[s:e].reset_index(drop=True)
+        stamp_windows.append(calc_time_stamps(wt).to_numpy(dtype=np.float32))
+    return torch.from_numpy(np.stack(norm_windows)), torch.from_numpy(np.stack(stamp_windows))
+
+
+def encode_dataset(frame, sequence_length, stride, tokenizer, model_template, calc_time_stamps, device):
+    values, stamps = prepare_windows(frame, sequence_length, stride, calc_time_stamps)
+    s1_list, s2_list = [], []
+    tokenizer.eval()
+    with torch.no_grad():
+        for i in range(0, len(values), 32):
+            token_ids = tokenizer.encode(values[i:i + 32].to(device))
+            s1, s2 = model_template.embedding.split_token(token_ids, model_template.embedding.s2_bits)
+            s1_list.append(s1.cpu())
+            s2_list.append(s2.cpu())
+    return TensorDataset(torch.cat(s1_list), torch.cat(s2_list), stamps)
+
+
+def teacher_forced_loss(model, s1, s2, stamps):
+    logits1, logits2 = model(s1, s2, stamp=stamps, use_teacher_forcing=True, s1_targets=s1)
+    loss1 = F.cross_entropy(logits1[:, :-1].reshape(-1, logits1.size(-1)), s1[:, 1:].reshape(-1))
+    loss2 = F.cross_entropy(logits2[:, :-1].reshape(-1, logits2.size(-1)), s2[:, 1:].reshape(-1))
+    return loss1 + loss2
+
+
+def run_epoch(model, loader, device, optimizer=None, gradient_clip=1.0):
+    training = optimizer is not None
+    model.train(training)
+    total_loss, total_n = 0.0, 0
+    for s1, s2, stamps in loader:
+        s1, s2, stamps = s1.to(device), s2.to(device), stamps.to(device)
+        if training:
+            optimizer.zero_grad(set_to_none=True)
+        with torch.set_grad_enabled(training):
+            loss = teacher_forced_loss(model, s1, s2, stamps)
+        if training:
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_([p for p in model.parameters() if p.requires_grad], gradient_clip)
+            optimizer.step()
+        total_loss += loss.item() * len(s1)
+        total_n += len(s1)
+    return total_loss / max(total_n, 1)
+
+
+# ---------------------------------------------------------------------------
+# Optuna Objective: Train 2022 -> Validate 2023
+# ---------------------------------------------------------------------------
+def create_initial_236_objective(model_template, tokenizer, train_slice, val_slice, seq_len, stride, calc_time_stamps, device, seed):
+    val_slice_with_context = pd.concat([train_slice.tail(seq_len - 1), val_slice])
+
+    train_ds = encode_dataset(train_slice, seq_len, stride, tokenizer, model_template, calc_time_stamps, device)
+    val_ds = encode_dataset(val_slice_with_context, seq_len, stride, tokenizer, model_template, calc_time_stamps, device)
+
+    def objective(trial):
+        set_seed(seed + trial.number)
+        rank = trial.suggest_categorical("rank", [4, 8, 16])
+        alpha = trial.suggest_categorical("alpha", [8, 16, 32])
+        dropout = trial.suggest_float("dropout", 0.0, 0.20)
+        lr = trial.suggest_float("learning_rate", 1e-5, 5e-4, log=True)
+        wd = trial.suggest_float("weight_decay", 1e-6, 1e-2, log=True)
+        bs = trial.suggest_categorical("batch_size", [4, 8, 16])
+        epochs = trial.suggest_int("epochs", 2, 4)
+
+        model = copy.deepcopy(model_template)
+        trainable = inject_lora(model, rank, alpha, dropout)
+        model.to(device)
+        opt = torch.optim.AdamW(trainable, lr=lr, weight_decay=wd)
+        tl = DataLoader(train_ds, batch_size=bs, shuffle=True)
+        vl = DataLoader(val_ds, batch_size=bs, shuffle=False)
+        best = float("inf")
+        try:
+            for ep in range(epochs):
+                run_epoch(model, tl, device, opt)
+                vloss = run_epoch(model, vl, device)
+                best = min(best, vloss)
+                trial.report(vloss, ep)
+                if trial.should_prune():
+                    raise optuna.TrialPruned()
+            return best
+        finally:
+            del model, opt
+            gc.collect()
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+
+    return objective
+
+
+# ---------------------------------------------------------------------------
+# True Walk-Forward: 236 Days Rolling Retraining -> Predict Day t (2024 to latest)
+# ---------------------------------------------------------------------------
+def run_true_walk_forward(
+    model_template, tokenizer, predictor_class,
+    frame, best_params, seq_len, stride,
+    sample_count, calc_time_stamps, device, seed
+):
+    total_bars = len(frame)
+    pred_indices = [idx for idx in range(WINDOW_SIZE, total_bars) if frame.index[idx] >= pd.Timestamp("2024-01-01")]
+    total_test_days = len(pred_indices)
+    print(f"\n=== Starting True Walk-Forward Retraining Loop ===")
+    print(f"Calibration/Window Size: {WINDOW_SIZE} days")
+    print(f"Prediction Period: {frame.index[pred_indices[0]].date()} to {frame.index[pred_indices[-1]].date()}")
+    print(f"Total Daily Predictions to Perform: {total_test_days} days\n")
+
+    predictions = []
+    actual_test_rows = []
+    wall_start = time.time()
+
+    for step_count, target_idx in enumerate(pred_indices):
+        iter_start = time.time()
+        target_date = frame.index[target_idx]
+
+        # 1. Exact 236-day training window [target_idx - 236 : target_idx]
+        train_window = frame.iloc[target_idx - WINDOW_SIZE : target_idx]
+
+        # 2. Reset base Kronos to pristine weights
+        model = copy.deepcopy(model_template)
+
+        # 3. Inject fresh LoRA adapter with Optuna parameters
+        trainable = inject_lora(model, best_params["rank"], best_params["alpha"], best_params["dropout"])
+        model.to(device)
+
+        # 4. Prepare dataset & train on current 236-day window
+        train_ds = encode_dataset(train_window, seq_len, stride, tokenizer, model_template, calc_time_stamps, device)
+        loader = DataLoader(train_ds, batch_size=best_params["batch_size"], shuffle=True)
+        opt = torch.optim.AdamW(trainable, lr=best_params["learning_rate"], weight_decay=best_params["weight_decay"])
+
+        for _ in range(best_params["epochs"]):
+            run_epoch(model, loader, device, opt)
+
+        # 5. Predict target_date strictly out-of-sample
+        model.eval()
+        tokenizer.eval()
+        predictor = predictor_class(model, tokenizer, device=str(device), max_context=512)
+
+        ctx_ts = pd.Series(train_window.index)
+        tgt_ts = pd.Series([target_date])
+
+        pred = predictor.predict_batch(
+            [train_window], [ctx_ts], [tgt_ts],
+            pred_len=1, T=1.0, top_k=0, top_p=0.9,
+            sample_count=sample_count, verbose=False
+        )
+        predictions.extend(pred)
+        actual_test_rows.append(frame.iloc[target_idx:target_idx + 1])
+
+        # 6. Discard model to guarantee zero leakage into next day
+        del model, opt, train_ds, loader, predictor, trainable
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+
+        # Timing & ETA
+        elapsed = time.time() - iter_start
+        total_elapsed = time.time() - wall_start
+        avg_time = total_elapsed / (step_count + 1)
+        eta_min = (avg_time * (total_test_days - step_count - 1)) / 60
+
+        if (step_count + 1) % 5 == 0 or step_count == 0 or (step_count + 1) == total_test_days:
+            print(
+                f"  Predicted Day {step_count + 1:>4d}/{total_test_days} | "
+                f"Target: {target_date.date()} | "
+                f"Trained on: {train_window.index[0].date()} -> {train_window.index[-1].date()} (236 bars) | "
+                f"{elapsed:.1f}s/step | ETA: {eta_min:.0f} min"
+            )
+
+    test_frame = pd.concat(actual_test_rows)
+    pred_frame = pd.concat(predictions).loc[test_frame.index]
+    pred_frame["high"] = pred_frame[PRICE_COLUMNS].max(axis=1)
+    pred_frame["low"] = pred_frame[PRICE_COLUMNS].min(axis=1)
+    return test_frame, pred_frame
+
+
+# ---------------------------------------------------------------------------
+# Metrics & Plotting
+# ---------------------------------------------------------------------------
+def compute_metrics(actual_close, predicted_close):
+    actual = actual_close.to_numpy(dtype=float)
+    predicted = predicted_close.to_numpy(dtype=float)
+    eps = 1e-8
+
+    actual_ret = (actual[1:] - actual[:-1]) / np.maximum(np.abs(actual[:-1]), eps)
+    predicted_ret = (predicted[1:] - actual[:-1]) / np.maximum(np.abs(actual[:-1]), eps)
+
+    dir_match = np.sign(actual_ret) == np.sign(predicted_ret)
+    dir_acc = float(np.mean(dir_match) * 100) if len(dir_match) > 0 else 0.0
+
+    strategy_ret = np.sign(predicted_ret) * actual_ret
+    cum_strategy = float(np.prod(1 + strategy_ret))
+    cum_buyhold = float(np.prod(1 + actual_ret))
+
+    return {
+        "RMSE (price)": float(np.sqrt(np.mean((actual - predicted) ** 2))),
+        "MAE (price)": float(np.mean(np.abs(actual - predicted))),
+        "MAPE (%)": float(np.mean(np.abs((actual - predicted) / np.maximum(np.abs(actual), eps))) * 100),
+        "R² (price)": float(1 - np.sum((actual - predicted) ** 2) / np.sum((actual - actual.mean()) ** 2)),
+        "Direction Accuracy (%)": dir_acc,
+        "Pearson (returns)": float(np.corrcoef(actual_ret, predicted_ret)[0, 1]) if len(actual_ret) > 1 else 0.0,
+        "Strategy Return (%)": float((cum_strategy - 1) * 100),
+        "Buy & Hold Return (%)": float((cum_buyhold - 1) * 100),
+        "Sharpe Ratio": float(np.mean(strategy_ret) / np.std(strategy_ret) * np.sqrt(252)) if np.std(strategy_ret) > 0 else 0.0,
+    }
+
+
+def create_forecast_chart(actual, predicted, metrics, output_html, output_png):
+    residual = actual["close"] - predicted["close"]
+    fig = make_subplots(
+        rows=3, cols=2, shared_xaxes=True,
+        vertical_spacing=0.035, horizontal_spacing=0.04,
+        row_heights=[1 / 3, 1 / 3, 1 / 3], column_widths=[0.75, 0.25],
+        specs=[
+            [{"type": "xy"}, {"type": "table", "rowspan": 3}],
+            [{"type": "xy"}, None],
+            [{"type": "xy"}, None],
+        ],
+        subplot_titles=(
+            "Actual Daily OHLC (Full Walk-Forward)",
+            "Walk-Forward Metrics (236-Day Sliding)",
+            "Kronos-LoRA Predicted Daily OHLC",
+            "Daily Close Residual (Actual − Predicted)",
+        ),
+    )
+    fig.add_trace(go.Candlestick(x=actual.index, open=actual["open"], high=actual["high"], low=actual["low"], close=actual["close"], name="Actual"), row=1, col=1)
+    fig.add_trace(go.Candlestick(x=predicted.index, open=predicted["open"], high=predicted["high"], low=predicted["low"], close=predicted["close"], name="Predicted"), row=2, col=1)
+    fig.add_trace(go.Scatter(x=residual.index, y=residual, mode="lines", line={"color": "#7c3aed", "width": 1.7}, name="Residual"), row=3, col=1)
+
+    names = list(metrics.keys())
+    values = [f"{v:.2f}%" if "%" in n else (f"{v:.4f}" if "Ratio" in n or "Pearson" in n or "R²" in n else f"{v:,.2f}") for n, v in metrics.items()]
+    colors = ["#f1f5f9" if i % 2 == 0 else "#ffffff" for i in range(len(names))]
+
+    fig.add_trace(go.Table(
+        columnwidth=[1.6, 1.0],
+        header={"values": ["<b>Metric</b>", "<b>Value</b>"], "fill_color": "#1e3a5f", "font": {"color": "white", "size": 12}, "align": ["left", "right"]},
+        cells={"values": [names, values], "fill_color": [colors, colors], "font": {"color": "#172033", "size": 11}, "align": ["left", "right"]},
+    ), row=1, col=2)
+
+    pmin = float(min(actual[PRICE_COLUMNS].min().min(), predicted[PRICE_COLUMNS].min().min()))
+    pmax = float(max(actual[PRICE_COLUMNS].max().max(), predicted[PRICE_COLUMNS].max().max()))
+    pad = max((pmax - pmin) * 0.03, 1)
+
+    fig.update_yaxes(title_text="Actual", range=[pmin - pad, pmax + pad], row=1, col=1)
+    fig.update_yaxes(title_text="Predicted", range=[pmin - pad, pmax + pad], row=2, col=1)
+    fig.update_yaxes(title_text="Residual", zeroline=True, row=3, col=1)
+    fig.update_xaxes(rangeslider_visible=False)
+    fig.update_xaxes(title_text="Trading day", row=3, col=1)
+    fig.update_layout(title=f"Kronos + LoRA: True 236-Day Walk-Forward Retraining ({len(actual)} Daily Forecasts)", height=1100, template="plotly_white")
+
+    fig.write_html(str(output_html), include_plotlyjs="cdn")
+    try:
+        fig.write_image(str(output_png), width=1600, height=1100, scale=1.5)
+    except Exception as exc:
+        print(f"PNG export skipped ({exc}).")
+
+
+# ---------------------------------------------------------------------------
+# Main Execution
+# ---------------------------------------------------------------------------
+def main():
+    args = parse_args()
+    set_seed(args.seed)
+    device = resolve_device(args.device)
+
+    Kronos, KronosPredictor, KronosTokenizer, calc_time_stamps = configure_kronos_import(args.kronos_repo)
+    model_path = resolve_pretrained_path(args.model_path, "Kronos-base", "NeoQuasar/Kronos-base")
+    tok_path = resolve_pretrained_path(args.tokenizer_path, "Kronos-Tokenizer-base", "NeoQuasar/Kronos-Tokenizer-base")
+
+    print(f"Device: {device}")
+    tokenizer = KronosTokenizer.from_pretrained(tok_path).to(device)
+    model_template = Kronos.from_pretrained(model_path).cpu()
+    for p in tokenizer.parameters():
+        p.requires_grad = False
+    for p in model_template.parameters():
+        p.requires_grad = False
+
+    frame = load_market_data(args.data_file, args.start, args.end)
+    if len(frame) <= WINDOW_SIZE:
+        raise ValueError(f"Data has only {len(frame)} bars; must be > {WINDOW_SIZE} to perform walk-forward.")
+
+    # Phase 1: Optuna calibration (Train: Jan 2022 - Dec 2022 | Validate: 2023)
+    optuna_train_slice = frame.loc[(frame.index >= pd.Timestamp("2022-01-01")) & (frame.index <= pd.Timestamp("2022-12-31"))]
+    optuna_val_slice = frame.loc[(frame.index >= pd.Timestamp("2023-01-01")) & (frame.index <= pd.Timestamp("2023-12-31"))]
+
+    print(f"\n=== Phase 1: Optuna Calibration ===")
+    print(f"Optuna Training Slice:   {optuna_train_slice.index[0].date()} to {optuna_train_slice.index[-1].date()} ({len(optuna_train_slice)} bars)")
+    print(f"Optuna Validation Slice: {optuna_val_slice.index[0].date()} to {optuna_val_slice.index[-1].date()} ({len(optuna_val_slice)} bars)")
+
+    study = optuna.create_study(direction="minimize", sampler=optuna.samplers.TPESampler(seed=args.seed))
+    study.optimize(
+        create_initial_236_objective(
+            model_template, tokenizer, optuna_train_slice, optuna_val_slice,
+            args.sequence_length, args.window_stride, calc_time_stamps, device, args.seed
+        ),
+        n_trials=args.trials,
+        timeout=args.timeout,
+        gc_after_trial=True,
+    )
+    study.trials_dataframe().to_csv(args.study_output, index=False)
+    best_params = study.best_trial.params
+    print(f"Optimal LoRA Hyperparameters: {json.dumps(best_params, indent=2)}")
+
+    # Phase 2: True Walk-Forward across all remaining days from 2024 till latest
+    test_frame, pred_frame = run_true_walk_forward(
+        model_template, tokenizer, KronosPredictor,
+        frame, best_params, args.sequence_length, args.window_stride,
+        args.sample_count, calc_time_stamps, device, args.seed
+    )
+
+    # Phase 3: Metrics & Visualizations
+    metrics = compute_metrics(test_frame["close"], pred_frame["close"])
+    print("\n=== Final Walk-Forward Metrics ===")
+    for k, v in metrics.items():
+        print(f"  {k:30s} {v:>10.2f}%" if "%" in k else f"  {k:30s} {v:>10.4f}")
+
+    create_forecast_chart(test_frame, pred_frame, metrics, args.output_html, args.output_png)
+    print(f"\nHTML Dashboard saved to: {args.output_html}")
+
+
+if __name__ == "__main__":
+    main()
