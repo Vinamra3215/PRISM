@@ -2,7 +2,7 @@
 
 # PRISM
 
-### **Pre-trained Indian Stock Model — Foundation Model for Indian Equity Markets**
+#### **Pre-trained Indian Stock Model — Foundation Model for Indian Equity Markets**
 
 *Fine-tuning Kronos with market-conditioned gating for cross-sectional stock ranking on NSE*
 
