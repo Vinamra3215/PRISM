@@ -1,0 +1,19 @@
+======================================================================
+TRUE CROSS-SECTIONAL FACTOR METRICS (50-STOCK NIFTY UNIVERSE)
+Period: 2024-01-02 to 2026-06-19 | Total Trading Days: 591
+======================================================================
+Universe Factor Rank IC (Mean):          0.00163
+Universe Factor ICIR (Annualized):       0.16
+Total Cumulative Rank IC:                0.9609
+
+Annualized Long/Short Spread (Q5 - Q1):  -1.11%
+Annualized Top Quantile Return (Q5):     10.69%
+Annualized Bottom Quantile Return (Q1):  11.81%
+
+Cross-Sectional Selection Hit Rate:      50.29%
+======================================================================
+Outputs Written:
+1. Daily Cross-Sectional Factors: /home/soq/__shutupandbendover/tanishq/factor_run_results_v5/daily_cross_sectional_factor_series.csv (and .txt)
+2. Per-Stock Tracking Metrics:    /home/soq/__shutupandbendover/tanishq/factor_run_results_v5/per_stock_tracking_metrics.csv (and .txt)
+3. Text Summary Table:            /home/soq/__shutupandbendover/tanishq/factor_run_results_v5/cross_sectional_universe_metrics.txt
+======================================================================
