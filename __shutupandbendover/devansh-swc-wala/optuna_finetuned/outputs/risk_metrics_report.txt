@@ -1,0 +1,24 @@
+====================== NIFTY 50 (TUNED FULL-FT ROLLING) RISK REPORT ======================
+ [1] RETURN-BASED RISK & PERFORMANCE METRICS
+  • Return RMSE (Vol. of Error)     : 1.4085 %
+  • Return MAE                      : 1.0666 %
+  • Return MAPE                     : 124548.88 %
+  • Return R² Score                 : -1.9073
+  • Pearson Correlation (r)         : 0.0197
+  • Directional Accuracy (MDA)      : 47.30 %
+----------------------------------------------------------------------
+ [2] CUMULATIVE RETURN TRACKING
+  • Actual Cumulative Return        : 26.19 %
+  • Predicted Cumulative Return     : 26.42 %
+  • Tracking Error Gap              : 0.23 %
+----------------------------------------------------------------------
+ [3] CANDLESTICK COLOR / DIRECTION CONFUSION MATRIX
+  • Total Candles Evaluated         : 760
+  • Candle Color Match Accuracy     : 51.58 %
+  • Total Color Mismatches          : 368 (48.42 %)
+  • False Green (Pred UP, Act DOWN) : 166
+  • False Red   (Pred DOWN, Act UP) : 202
+----------------------------------------------------------------------
+ [4] RAW OHLC MAE POINT ERRORS
+  • Open MAE: 145.15 | High MAE: 172.56 | Low MAE: 226.32 | Close MAE: 247.86
+======================================================================

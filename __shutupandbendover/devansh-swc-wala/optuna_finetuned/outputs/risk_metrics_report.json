@@ -1,0 +1,21 @@
+{
+    "Return_RMSE_%": 1.4085202014756366,
+    "Return_MAE_%": 1.0665553023727854,
+    "Return_MAPE_%": 124548.87725173264,
+    "Return_R2": -1.9073424728296287,
+    "Pearson_Correlation_r": 0.019667346374574606,
+    "Directional_Accuracy_%": 47.299077733860344,
+    "Cumulative_Actual_Return_%": 26.192446770723894,
+    "Cumulative_Predicted_Return_%": 26.422294354670832,
+    "Return_Tracking_Error_%": 0.22984758394693827,
+    "Total_Candles_Evaluated": 760,
+    "Color_Mismatch_Count": 368,
+    "Color_Mismatch_Rate_%": 48.421052631578945,
+    "False_Green_Count": 166,
+    "False_Red_Count": 202,
+    "Color_Accuracy_%": 51.578947368421055,
+    "Open_MAE_Pts": 145.15421977796052,
+    "High_MAE_Pts": 172.56185752467104,
+    "Low_MAE_Pts": 226.32333213404604,
+    "Close_MAE_Pts": 247.86288291529604
+}

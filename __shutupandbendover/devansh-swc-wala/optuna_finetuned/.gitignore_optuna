@@ -1,0 +1,12 @@
+# Ignore large datasets
+*.parquet
+
+# Ignore reports and logs
+*.txt
+*.json
+outputs/*.txt
+outputs/*.json
+
+# Ignore Python bytecode
+__pycache__/
+*.pyc

@@ -1,0 +1,10 @@
+{
+    "optimal_hyperparameters": {
+        "rolling_window": 220,
+        "adapt_epochs": 3,
+        "lr": 8.455251531237626e-06,
+        "recency_decay": 0.5637281608315128,
+        "weight_decay": 0.00027520696850790545
+    },
+    "best_val_mae": 0.8645245634498111
+}
