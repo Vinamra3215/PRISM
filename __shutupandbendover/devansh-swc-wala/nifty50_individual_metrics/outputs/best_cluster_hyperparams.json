@@ -1,0 +1,8 @@
+{
+    "rolling_window": 452,
+    "adapt_epochs": 10,
+    "lr": 3.394046833983563e-05,
+    "lora_r": 16,
+    "lora_alpha": 64,
+    "recency_decay": 0.3820457481218804
+}
