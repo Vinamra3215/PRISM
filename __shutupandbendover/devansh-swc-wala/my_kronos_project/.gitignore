@@ -1,0 +1,38 @@
+# Python bytecode & environments
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+_main_venv/
+env/
+venv/
+
+# Heavy datasets and model binaries (>50MB / Git lfs candidates)
+*.parquet
+*.pt
+*.bin
+*.onnx
+*.tar.gz
+*.zip
+
+# VS Code / IDE artifacts
+.vscode/
+.idea/
+*.swp
+*.swo
+cat << 'EOF' >> .gitignore
+# Ignore model checkpoints and large binaries
+*.safetensors
+*.pt
+*.bin
+models/
+lora_adapters/
+EOF
+
+
+# Whitelist project configurations and deliverables
+!requirements.txt
+!*.json
+!outputs/*.json
+
+*.parquet
