@@ -1,0 +1,11 @@
+feature,definition,category
+upper_shadow_ratio,"(High - max(Open, Close)) / (High - Low)",Candlestick & Price Structure
+lower_shadow_ratio,"(min(Open, Close) - Low) / (High - Low)",Candlestick & Price Structure
+body_ratio,abs(Close - Open) / (High - Low),Candlestick & Price Structure
+candle_direction,"+1 bullish, -1 bearish, 0 when Open equals Close",Candlestick & Price Structure
+consecutive_up_days,Consecutive days with positive close-to-close return,Candlestick & Price Structure
+consecutive_down_days,Consecutive days with negative close-to-close return,Candlestick & Price Structure
+bollinger_band_percent_b,(Close - Lower Band) / (Upper Band - Lower Band); 20-day SMA and 2 standard deviations,Candlestick & Price Structure
+bollinger_band_width,(Upper Band - Lower Band) / Middle Band; 20-day SMA and 2 standard deviations,Candlestick & Price Structure
+keltner_channel_position,(Close - Lower KC) / (Upper KC - Lower KC); EMA20 +/- 2*ATR20,Candlestick & Price Structure
+donchian_channel_position,(Close - 20-day Low) / (20-day High - 20-day Low),Candlestick & Price Structure

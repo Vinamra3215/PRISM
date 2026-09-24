@@ -1,0 +1,11 @@
+Feature,Stationary?,RankIC,ICIR,Dropped Correlated With,Verdict
+upper_shadow_ratio,Yes,0.0200584991643879,0.1232982428916993,,KEEP
+lower_shadow_ratio,Yes,-0.0012481922794147,-0.0073348910327813,,DROP — LOW ICIR
+body_ratio,Yes,-0.0099351702763697,-0.0610178842028716,,DROP — LOW ICIR
+candle_direction,Yes,-0.0288093966233837,-0.1727018947890949,,KEEP
+consecutive_up_days,Yes,-0.0304245595417613,-0.1772661938991779,consecutive_down_days,DROP — CORRELATED
+consecutive_down_days,Yes,0.0319701773113488,0.1832963952944952,,KEEP
+bollinger_band_percent_b,Mixed,-0.0383687751108486,-0.2014992966386045,keltner_channel_position,DROP — CORRELATED
+bollinger_band_width,Mixed,-0.0102938280026363,-0.0537472987835191,,DROP — LOW ICIR
+keltner_channel_position,Mixed,-0.040533921760764,-0.2045395970400955,,KEEP
+donchian_channel_position,Mixed,-0.0351009949923748,-0.1838439511974065,keltner_channel_position,DROP — CORRELATED

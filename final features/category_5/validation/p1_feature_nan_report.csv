@@ -1,0 +1,11 @@
+feature,total_rows,valid_values,nan_values,nan_percentage
+upper_shadow_ratio,57545,57285,260,0.4518203145364497
+lower_shadow_ratio,57545,57285,260,0.4518203145364497
+body_ratio,57545,57285,260,0.4518203145364497
+candle_direction,57545,57545,0,0.0
+consecutive_up_days,57545,57545,0,0.0
+consecutive_down_days,57545,57545,0,0.0
+bollinger_band_percent_b,57545,56595,950,1.6508819184985664
+bollinger_band_width,57545,56595,950,1.6508819184985664
+keltner_channel_position,57545,56595,950,1.6508819184985664
+donchian_channel_position,57545,56595,950,1.6508819184985664

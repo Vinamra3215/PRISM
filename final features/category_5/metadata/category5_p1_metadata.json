@@ -1,0 +1,48 @@
+{
+    "project": "PRISM",
+    "block": 2,
+    "category": 5,
+    "category_name": "Candlestick & Price Structure Features",
+    "phase": 1,
+    "step": "P1",
+    "continuous_learning": false,
+    "model_training": false,
+    "feature_selection": false,
+    "rankic_calculation": false,
+    "icir_calculation": false,
+    "data_period": "Full available data: January 2022 -> Present",
+    "raw_data_directory": "/home/soq/__shutupandbendover/yatin/final features/NIFTY50_OHLCV",
+    "number_of_companies": 50,
+    "number_of_features": 10,
+    "features": [
+        "upper_shadow_ratio",
+        "lower_shadow_ratio",
+        "body_ratio",
+        "candle_direction",
+        "consecutive_up_days",
+        "consecutive_down_days",
+        "bollinger_band_percent_b",
+        "bollinger_band_width",
+        "keltner_channel_position",
+        "donchian_channel_position"
+    ],
+    "bollinger": {
+        "window": 20,
+        "std_multiplier": 2.0
+    },
+    "keltner": {
+        "ema_window": 20,
+        "atr_window": 20,
+        "atr_multiplier": 2.0
+    },
+    "donchian": {
+        "window": 20
+    },
+    "notes": [
+        "Expected rolling-window NaNs are retained.",
+        "No artificial values are created for missing historical periods.",
+        "JIOFIN uses only its actual available history.",
+        "Raw OHLCV files are not modified.",
+        "2024-present data is computed in P1 but must not be used for P2/P3 feature selection."
+    ]
+}
