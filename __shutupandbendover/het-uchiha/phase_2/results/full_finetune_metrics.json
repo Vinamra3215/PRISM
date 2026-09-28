@@ -1,0 +1,29 @@
+{
+    "test_period": {
+        "RMSE (returns)": 0.010249841495143809,
+        "MAE (returns)": 0.007791908943210344,
+        "Direction Accuracy (%)": 49.0372272143774,
+        "Pearson (returns)": 0.01600698834980843,
+        "Directional Strategy Return (%)": 18.60023952154426,
+        "Mean Actual Return (%)": 0.03257355989188247,
+        "Mean Predicted Return (%)": -0.06145602848005916
+    },
+    "validation_period": {
+        "RMSE (returns)": 0.008385079024229804,
+        "MAE (returns)": 0.006697994612482808,
+        "Direction Accuracy (%)": 51.63934426229508,
+        "Pearson (returns)": 0.007276647732208814,
+        "Directional Strategy Return (%)": 5.491681833410111,
+        "Mean Actual Return (%)": 0.04968106541115827,
+        "Mean Predicted Return (%)": -0.06195492400878419
+    },
+    "test_start": "2023-07-01",
+    "validation_start": "2023-01-01",
+    "validation_end": "2023-06-30",
+    "optuna_start": "2022-01-01",
+    "optuna_end": "2022-12-31",
+    "best_optuna_parameters": {
+        "learning_rate": 4.6225890010208326e-05,
+        "weight_decay": 7.068974950624607e-06
+    }
+}

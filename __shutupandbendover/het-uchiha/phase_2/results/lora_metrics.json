@@ -1,0 +1,45 @@
+{
+    "test_period": {
+        "RMSE (returns)": 0.010444773459954279,
+        "MAE (returns)": 0.007815222540269912,
+        "Direction Accuracy (%)": 49.0372272143774,
+        "Pearson (returns)": 0.008810567155677513,
+        "Mean Error (returns)": -0.0009624094431768929,
+        "Max Absolute Error (returns)": 0.0583512939817687
+    },
+    "validation_period": {
+        "RMSE (returns)": 0.00788722337558728,
+        "MAE (returns)": 0.006363089527069035,
+        "Direction Accuracy (%)": 51.63934426229508,
+        "Pearson (returns)": 0.13840898346827252,
+        "Mean Error (returns)": -0.0013793759906359589,
+        "Max Absolute Error (returns)": 0.022385881500284806
+    },
+    "timing": {
+        "optuna_seconds": 1349.0751707149902,
+        "optuna_time": "22m 29.1s",
+        "validation_training_seconds": 836.0309264442185,
+        "validation_prediction_seconds": 5.31545026297681,
+        "validation_total_seconds": 841.3463767071953,
+        "validation_total_time": "14m 1.3s",
+        "rolling_training_seconds": 6421.836343449773,
+        "rolling_prediction_seconds": 38.12648920889478,
+        "rolling_total_seconds": 6459.962832658668,
+        "rolling_total_time": "1h 47m 40.0s",
+        "total_seconds": 8792.913034358993,
+        "total_time": "2h 26m 32.9s"
+    },
+    "splits": {
+        "optuna": "2022-01-01 \u2192 2022-12-31",
+        "validation": "2023-01-01 \u2192 2023-06-30",
+        "actual_training": "2023-07-01 \u2192 end of dataset"
+    },
+    "best_params": {
+        "rank": 4,
+        "alpha": 32,
+        "dropout": 0.15502656467222292,
+        "learning_rate": 0.0003946212980759095,
+        "weight_decay": 0.003795853142670641
+    },
+    "num_predictions": 779
+}

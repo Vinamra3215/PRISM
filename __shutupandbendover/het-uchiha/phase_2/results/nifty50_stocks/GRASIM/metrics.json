@@ -1,0 +1,31 @@
+{
+    "validation": {
+        "RMSE_returns": 0.013063096191466991,
+        "MAE_returns": 0.01077528750982706,
+        "Direction_Accuracy_percent": 47.540983606557376,
+        "Pearson_returns": 0.04297407317270236,
+        "Mean_Error_returns": -0.00209736801597328,
+        "Max_Absolute_Error_returns": 0.033893154499248984,
+        "Num_predictions": 122
+    },
+    "test": {
+        "RMSE_returns": 0.01753317594904104,
+        "MAE_returns": 0.013251568000425411,
+        "Direction_Accuracy_percent": 48.669201520912544,
+        "Pearson_returns": -0.0099167297064698,
+        "Mean_Error_returns": -0.002272441263950931,
+        "Max_Absolute_Error_returns": 0.06884943693123359,
+        "Num_predictions": 789
+    },
+    "timing": {
+        "optuna_seconds": 1334.1865404280252,
+        "validation_training_seconds": 909.0998415400973,
+        "validation_prediction_seconds": 4.00003511479008,
+        "validation_total_seconds": 913.0998766548873,
+        "rolling_training_seconds": 5804.242197849962,
+        "rolling_prediction_seconds": 27.743225659010932,
+        "rolling_total_seconds": 5831.985423508973,
+        "total_seconds": 8197.940879156988,
+        "total_time": "2h 16m 37.9s"
+    }
+}

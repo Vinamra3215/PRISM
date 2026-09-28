@@ -1,0 +1,8 @@
+{
+    "RMSE (price)": 245.07261976861753,
+    "MAE (price)": 182.79532804476892,
+    "RMSE (returns)": 0.014526420103225891,
+    "MAE (returns)": 0.010530878352749521,
+    "Direction Accuracy (%)": 50.51413881748073,
+    "Pearson (returns, predicted previous)": -0.058611505307951256
+}
