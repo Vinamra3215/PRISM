@@ -1,0 +1,32 @@
+FILE: lightgbm_feature_importance.csv
+======================================================================
+                 feature importance_gain  importance_split rank_ic_abs
+      nifty_daily_return          7.5414               640      0.0696
+         nifty_5d_return          5.4101               593      0.0343
+           nifty_vol_20d          4.9105               534      0.0170
+           pharma_return          4.8744               473      0.0513
+         ma_ratio_50_200          1.7584               197      0.0143
+           52w_high_dist          1.4455               196      0.0163
+  rolling_volatility_10d          1.2807               205      0.0088
+          intraday_range          1.0056               162      0.0102
+keltner_channel_position          0.8783               151      0.0076
+          trend_strength          0.7134               122      0.0033
+             cs_return_z          0.6941               149      0.0284
+      volume_price_trend          0.6626               128      0.0054
+ volatility_ratio_5d_20d          0.5652               106      0.0024
+  sector_relative_return          0.5145               102      0.0144
+    rolling_skewness_20d          0.5081                74      0.0071
+volatility_ratio_20d_60d          0.4992               101      0.0167
+             macd_signal          0.4861                75      0.0096
+         volume_momentum          0.4720                86      0.0023
+               macd_hist          0.4432                77      0.0049
+    rolling_kurtosis_20d          0.3978                83      0.0094
+                 atr_14d          0.3841                85      0.0118
+      upper_shadow_ratio          0.2347                57      0.0133
+         volume_ratio_5d          0.2012                40      0.0086
+          rsi_vol_diverg          0.1041                29      0.0011
+   consecutive_down_days          0.0637                19      0.0078
+         breakout_signal          0.0567                13      0.0081
+        candle_direction          0.0128                 3      0.0165
+             auto_return          0.0000                 0      0.0000
+======================================================================
