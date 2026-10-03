@@ -1,0 +1,18 @@
+{
+    "Predictions": 1041,
+    "RMSE": 2.2817161271328907,
+    "MAE": 1.6265507959362127,
+    "MAPE": 295.01359600780546,
+    "R2": -0.6083752041264989,
+    "Direction Accuracy": 48.94230769230769,
+    "Actual Return": 70.8409053288555,
+    "Predicted Return": 71.66682405011682,
+    "Pearson Correlation": 0.04428338127299464,
+    "Company": "ONGC",
+    "Lookback": 118,
+    "Forecast Horizon": 1,
+    "Epochs": 25,
+    "LoRA Rank": 8,
+    "LoRA Alpha": 16,
+    "LoRA Dropout": 0.05
+}

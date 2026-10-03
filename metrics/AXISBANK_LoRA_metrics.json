@@ -1,0 +1,18 @@
+{
+    "Predictions": 1041,
+    "RMSE": 1.9486833553350804,
+    "MAE": 1.4897992569807437,
+    "MAPE": 541.5733026062168,
+    "R2": -0.8007058704024057,
+    "Direction Accuracy": 48.36538461538461,
+    "Actual Return": 100.78864353312302,
+    "Predicted Return": 95.49129257442823,
+    "Pearson Correlation": 0.02531013542538975,
+    "Company": "AXISBANK",
+    "Lookback": 118,
+    "Forecast Horizon": 1,
+    "Epochs": 25,
+    "LoRA Rank": 8,
+    "LoRA Alpha": 16,
+    "LoRA Dropout": 0.05
+}

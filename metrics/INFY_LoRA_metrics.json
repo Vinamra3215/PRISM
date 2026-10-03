@@ -1,0 +1,18 @@
+{
+    "Predictions": 1041,
+    "RMSE": 2.0637428593112173,
+    "MAE": 1.5152060694772718,
+    "MAPE": 370.4506716766676,
+    "R2": -0.6313518962383293,
+    "Direction Accuracy": 50.480769230769226,
+    "Actual Return": -21.58767475236735,
+    "Predicted Return": -21.708847179672574,
+    "Pearson Correlation": -0.02292632665639797,
+    "Company": "INFY",
+    "Lookback": 118,
+    "Forecast Horizon": 1,
+    "Epochs": 25,
+    "LoRA Rank": 8,
+    "LoRA Alpha": 16,
+    "LoRA Dropout": 0.05
+}

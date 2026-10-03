@@ -1,0 +1,18 @@
+{
+    "Predictions": 1041,
+    "RMSE": 1.9233837839888839,
+    "MAE": 1.455262282266518,
+    "MAPE": 394.2192933383398,
+    "R2": -0.6343484620569153,
+    "Direction Accuracy": 49.03846153846153,
+    "Actual Return": -2.6805570337077755,
+    "Predicted Return": -5.646379629858123,
+    "Pearson Correlation": -0.007862512154108952,
+    "Company": "HDFCLIFE",
+    "Lookback": 118,
+    "Forecast Horizon": 1,
+    "Epochs": 25,
+    "LoRA Rank": 8,
+    "LoRA Alpha": 16,
+    "LoRA Dropout": 0.05
+}

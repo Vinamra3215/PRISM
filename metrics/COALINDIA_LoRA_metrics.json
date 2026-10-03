@@ -1,0 +1,18 @@
+{
+    "Predictions": 1041,
+    "RMSE": 2.13642835386534,
+    "MAE": 1.5394586573389668,
+    "MAPE": 345.70528333763696,
+    "R2": -0.6966767142489205,
+    "Direction Accuracy": 51.92307692307693,
+    "Actual Return": 135.2591327805022,
+    "Predicted Return": 140.14505658888848,
+    "Pearson Correlation": 0.03100477627179815,
+    "Company": "COALINDIA",
+    "Lookback": 118,
+    "Forecast Horizon": 1,
+    "Epochs": 25,
+    "LoRA Rank": 8,
+    "LoRA Alpha": 16,
+    "LoRA Dropout": 0.05
+}

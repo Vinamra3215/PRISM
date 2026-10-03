@@ -1,0 +1,18 @@
+{
+    "Predictions": 1041,
+    "RMSE": 1.8962535436487582,
+    "MAE": 1.4052773207912983,
+    "MAPE": 458.01822393112576,
+    "R2": -0.6101618232191721,
+    "Direction Accuracy": 49.13461538461538,
+    "Actual Return": 123.68739143333794,
+    "Predicted Return": 124.29865667566733,
+    "Pearson Correlation": -0.00645798270577605,
+    "Company": "SBIN",
+    "Lookback": 118,
+    "Forecast Horizon": 1,
+    "Epochs": 25,
+    "LoRA Rank": 8,
+    "LoRA Alpha": 16,
+    "LoRA Dropout": 0.05
+}

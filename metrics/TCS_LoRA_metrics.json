@@ -1,0 +1,18 @@
+{
+    "Predictions": 1041,
+    "RMSE": 1.698809661674312,
+    "MAE": 1.2617011787731356,
+    "MAPE": 395.524369165699,
+    "R2": -0.46818969726405624,
+    "Direction Accuracy": 52.11538461538462,
+    "Actual Return": -30.035530907797426,
+    "Predicted Return": -29.67323070891745,
+    "Pearson Correlation": 0.05480846353722723,
+    "Company": "TCS",
+    "Lookback": 118,
+    "Forecast Horizon": 1,
+    "Epochs": 25,
+    "LoRA Rank": 8,
+    "LoRA Alpha": 16,
+    "LoRA Dropout": 0.05
+}

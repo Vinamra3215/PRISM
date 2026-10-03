@@ -1,0 +1,18 @@
+{
+    "Predictions": 1041,
+    "RMSE": 1.5956382529215198,
+    "MAE": 1.1987792662900767,
+    "MAPE": 435.53902205786164,
+    "R2": -0.7842939746638666,
+    "Direction Accuracy": 51.24999999999999,
+    "Actual Return": 130.29348244288076,
+    "Predicted Return": 134.16214627031957,
+    "Pearson Correlation": 0.0023736738123862045,
+    "Company": "SUNPHARMA",
+    "Lookback": 118,
+    "Forecast Horizon": 1,
+    "Epochs": 25,
+    "LoRA Rank": 8,
+    "LoRA Alpha": 16,
+    "LoRA Dropout": 0.05
+}

@@ -1,0 +1,18 @@
+{
+    "Predictions": 1041,
+    "RMSE": 3.4787596047657883,
+    "MAE": 2.565725750567123,
+    "MAPE": 318.74161143953654,
+    "R2": -0.6977760218196416,
+    "Direction Accuracy": 47.01923076923077,
+    "Actual Return": 357.8014184397163,
+    "Predicted Return": 360.72937444592196,
+    "Pearson Correlation": -0.029178620306996982,
+    "Company": "ETERNAL",
+    "Lookback": 118,
+    "Forecast Horizon": 1,
+    "Epochs": 25,
+    "LoRA Rank": 8,
+    "LoRA Alpha": 16,
+    "LoRA Dropout": 0.05
+}

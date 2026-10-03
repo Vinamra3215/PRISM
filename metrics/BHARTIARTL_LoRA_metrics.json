@@ -1,0 +1,18 @@
+{
+    "Predictions": 1041,
+    "RMSE": 1.6692869908659993,
+    "MAE": 1.2986314392548717,
+    "MAPE": 558.2896421335349,
+    "R2": -0.6591527831511474,
+    "Direction Accuracy": 50.19230769230769,
+    "Actual Return": 174.13587105723312,
+    "Predicted Return": 178.41718892553845,
+    "Pearson Correlation": 0.024450896819013388,
+    "Company": "BHARTIARTL",
+    "Lookback": 118,
+    "Forecast Horizon": 1,
+    "Epochs": 25,
+    "LoRA Rank": 8,
+    "LoRA Alpha": 16,
+    "LoRA Dropout": 0.05
+}
