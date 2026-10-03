@@ -1,0 +1,17 @@
+{
+    "evaluation_basis": "daily_close_returns_only",
+    "rmse": 0.010050405694464923,
+    "mae": 0.007446728213589348,
+    "mape_percent": 883504262507.2859,
+    "r2": -0.31996266456964584,
+    "direction_accuracy_percent": 51.16696588868941,
+    "actual_total_return_percent": 34.24255431095342,
+    "predicted_total_return_percent": 171.347523789743,
+    "pearson_correlation": 0.14500057335966327,
+    "number_of_evaluated_days": 1114,
+    "rolling_window_days": 118,
+    "prediction_length_days": 1,
+    "fresh_lora_every_window": true,
+    "fresh_base_weights": true,
+    "optuna_tuned": true
+}

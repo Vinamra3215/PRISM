@@ -1,0 +1,26 @@
+{
+    "data_path": "/home/soq/__shutupandbendover/yatin/lora tune/NIFTY50_5Y_OHLCV.parquet",
+    "kronos_dir": "/home/soq/Kronos",
+    "model_path": "/home/soq/__shutupandbendover/het-uchiha/weights/Kronos-base",
+    "tokenizer_path": "/home/soq/__shutupandbendover/het-uchiha/weights/Kronos-Tokenizer-base",
+    "device": "cuda:0",
+    "rolling_window_days": 118,
+    "prediction_length_days": 1,
+    "requested_start_date": "2022-01-01",
+    "max_context": 512,
+    "optuna_trials": 8,
+    "fresh_base_weights": true,
+    "fresh_lora_every_window": true,
+    "metrics_on": "daily_close_returns_only",
+    "best_optuna_parameters": {
+        "rank": 8,
+        "alpha": 8,
+        "dropout": 0.0,
+        "learning_rate": 0.0002962151658830348,
+        "epochs": 5,
+        "temperature": 1.1248435466776274,
+        "top_k": 5,
+        "top_p": 0.7954562418017752,
+        "sample_count": 3
+    }
+}

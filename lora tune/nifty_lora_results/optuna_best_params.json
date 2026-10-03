@@ -1,0 +1,11 @@
+{
+    "rank": 8,
+    "alpha": 8,
+    "dropout": 0.0,
+    "learning_rate": 0.0002962151658830348,
+    "epochs": 5,
+    "temperature": 1.1248435466776274,
+    "top_k": 5,
+    "top_p": 0.7954562418017752,
+    "sample_count": 3
+}
