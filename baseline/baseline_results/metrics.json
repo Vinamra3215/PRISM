@@ -1,0 +1,12 @@
+{
+    "evaluation_basis": "Daily one-step-ahead Close returns only",
+    "number_of_predictions": 1115,
+    "RMSE": 0.011604595259340563,
+    "MAE": 0.008747282601556598,
+    "MAPE_percent": 632.4158507782851,
+    "R2": -0.7612031241034396,
+    "Direction_Accuracy_percent": 49.865470852017935,
+    "Actual_Return_percent": 34.63364465500576,
+    "Predicted_Return_percent": 147.33936998647957,
+    "Pearson_Correlation": 0.06966184215935252
+}
