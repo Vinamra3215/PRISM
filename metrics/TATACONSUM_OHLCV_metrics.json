@@ -1,0 +1,32 @@
+{
+    "company": "TATACONSUM_OHLCV",
+    "model": "Kronos Base",
+    "experiment": "Zero-Shot Baseline",
+    "fine_tuning": false,
+    "lora": false,
+    "window_size": 118,
+    "prediction_length": 1,
+    "prediction_method": "118 actual previous trading days -> next actual trading day",
+    "uses_predicted_values_as_input": false,
+    "optuna": true,
+    "optuna_best_parameters": {
+        "T": 0.5388970213560339,
+        "top_p": 0.7127259224707336
+    },
+    "metrics": {
+        "RMSE_decimal": 0.01839659724926936,
+        "MAE_decimal": 0.013527667580503758,
+        "MAPE_decimal": 3.1049087222510408,
+        "RMSE_percent": 1.839659724926936,
+        "MAE_percent": 1.3527667580503757,
+        "MAPE_percent": 310.49087222510406,
+        "R2": -0.7220286440469674,
+        "Direction_Accuracy_percent": 51.008645533141205,
+        "Actual_Return_percent": 40.58041378513542,
+        "Predicted_Return_percent": 222.65617905426703,
+        "Pearson_Correlation": 0.03558989634463455,
+        "Number_of_predictions": 1041,
+        "First_prediction_date": "2022-06-24",
+        "Last_prediction_date": "2026-09-04"
+    }
+}

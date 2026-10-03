@@ -1,0 +1,32 @@
+{
+    "company": "SHRIRAMFIN_OHLCV",
+    "model": "Kronos Base",
+    "experiment": "Zero-Shot Baseline",
+    "fine_tuning": false,
+    "lora": false,
+    "window_size": 118,
+    "prediction_length": 1,
+    "prediction_method": "118 actual previous trading days -> next actual trading day",
+    "uses_predicted_values_as_input": false,
+    "optuna": true,
+    "optuna_best_parameters": {
+        "T": 0.7387798347795564,
+        "top_p": 0.8637395241115695
+    },
+    "metrics": {
+        "RMSE_decimal": 0.029005632431824416,
+        "MAE_decimal": 0.021518937073266343,
+        "MAPE_decimal": 8.262513858426225,
+        "RMSE_percent": 2.9005632431824417,
+        "MAE_percent": 2.1518937073266344,
+        "MAPE_percent": 826.2513858426224,
+        "R2": -0.8176213676563291,
+        "Direction_Accuracy_percent": 50.43227665706051,
+        "Actual_Return_percent": 334.5466733215278,
+        "Predicted_Return_percent": -81.73274262041936,
+        "Pearson_Correlation": 0.01222777672705295,
+        "Number_of_predictions": 1041,
+        "First_prediction_date": "2022-06-24",
+        "Last_prediction_date": "2026-09-04"
+    }
+}

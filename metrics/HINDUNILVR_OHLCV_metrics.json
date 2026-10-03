@@ -1,0 +1,32 @@
+{
+    "company": "HINDUNILVR_OHLCV",
+    "model": "Kronos Base",
+    "experiment": "Zero-Shot Baseline",
+    "fine_tuning": false,
+    "lora": false,
+    "window_size": 118,
+    "prediction_length": 1,
+    "prediction_method": "118 actual previous trading days -> next actual trading day",
+    "uses_predicted_values_as_input": false,
+    "optuna": true,
+    "optuna_best_parameters": {
+        "T": 1.14010487879217,
+        "top_p": 0.5723617856226955
+    },
+    "metrics": {
+        "RMSE_decimal": 0.016720567087297227,
+        "MAE_decimal": 0.012536705292765694,
+        "MAPE_decimal": 4.730946106444099,
+        "RMSE_percent": 1.6720567087297227,
+        "MAE_percent": 1.2536705292765693,
+        "MAPE_percent": 473.0946106444099,
+        "R2": -0.7951336175560177,
+        "Direction_Accuracy_percent": 50.43227665706051,
+        "Actual_Return_percent": -12.394568993079591,
+        "Predicted_Return_percent": 888.4490625311789,
+        "Pearson_Correlation": 0.03192514921114281,
+        "Number_of_predictions": 1041,
+        "First_prediction_date": "2022-06-24",
+        "Last_prediction_date": "2026-09-04"
+    }
+}

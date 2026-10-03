@@ -1,0 +1,32 @@
+{
+    "company": "SBILIFE_OHLCV",
+    "model": "Kronos Base",
+    "experiment": "Zero-Shot Baseline",
+    "fine_tuning": false,
+    "lora": false,
+    "window_size": 118,
+    "prediction_length": 1,
+    "prediction_method": "118 actual previous trading days -> next actual trading day",
+    "uses_predicted_values_as_input": false,
+    "optuna": true,
+    "optuna_best_parameters": {
+        "T": 0.7926273608176618,
+        "top_p": 0.7730634906183218
+    },
+    "metrics": {
+        "RMSE_decimal": 0.019344838431700855,
+        "MAE_decimal": 0.014255910699252252,
+        "MAPE_decimal": 3.9829089572963388,
+        "RMSE_percent": 1.9344838431700855,
+        "MAE_percent": 1.4255910699252252,
+        "MAPE_percent": 398.29089572963386,
+        "R2": -0.9343794269538472,
+        "Direction_Accuracy_percent": 51.77713736791547,
+        "Actual_Return_percent": 65.29310800901116,
+        "Predicted_Return_percent": -3.6041526463637785,
+        "Pearson_Correlation": 0.00805564650633046,
+        "Number_of_predictions": 1041,
+        "First_prediction_date": "2022-06-24",
+        "Last_prediction_date": "2026-09-04"
+    }
+}

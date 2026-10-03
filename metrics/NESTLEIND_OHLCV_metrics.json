@@ -1,0 +1,32 @@
+{
+    "company": "NESTLEIND_OHLCV",
+    "model": "Kronos Base",
+    "experiment": "Zero-Shot Baseline",
+    "fine_tuning": false,
+    "lora": false,
+    "window_size": 118,
+    "prediction_length": 1,
+    "prediction_method": "118 actual previous trading days -> next actual trading day",
+    "uses_predicted_values_as_input": false,
+    "optuna": true,
+    "optuna_best_parameters": {
+        "T": 0.5828158638582909,
+        "top_p": 0.8527307240906101
+    },
+    "metrics": {
+        "RMSE_decimal": 0.015150609339248574,
+        "MAE_decimal": 0.011476591748651002,
+        "MAPE_decimal": 4.743290034124947,
+        "RMSE_percent": 1.5150609339248575,
+        "MAE_percent": 1.1476591748651002,
+        "MAPE_percent": 474.3290034124947,
+        "R2": -0.5987355403947994,
+        "Direction_Accuracy_percent": 49.95196926032661,
+        "Actual_Return_percent": 66.17284048267808,
+        "Predicted_Return_percent": -58.21335915599568,
+        "Pearson_Correlation": 0.03414380038998312,
+        "Number_of_predictions": 1041,
+        "First_prediction_date": "2022-06-24",
+        "Last_prediction_date": "2026-09-04"
+    }
+}

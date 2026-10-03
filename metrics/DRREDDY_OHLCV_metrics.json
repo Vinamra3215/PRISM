@@ -1,0 +1,32 @@
+{
+    "company": "DRREDDY_OHLCV",
+    "model": "Kronos Base",
+    "experiment": "Zero-Shot Baseline",
+    "fine_tuning": false,
+    "lora": false,
+    "window_size": 118,
+    "prediction_length": 1,
+    "prediction_method": "118 actual previous trading days -> next actual trading day",
+    "uses_predicted_values_as_input": false,
+    "optuna": true,
+    "optuna_best_parameters": {
+        "T": 0.7106252542085932,
+        "top_p": 0.6846389364904755
+    },
+    "metrics": {
+        "RMSE_decimal": 0.01577243214688199,
+        "MAE_decimal": 0.011789672982649423,
+        "MAPE_decimal": 4.639948354813127,
+        "RMSE_percent": 1.577243214688199,
+        "MAE_percent": 1.1789672982649424,
+        "MAPE_percent": 463.9948354813127,
+        "R2": -0.44991795086147723,
+        "Direction_Accuracy_percent": 54.370797310278576,
+        "Actual_Return_percent": 33.996137997522744,
+        "Predicted_Return_percent": 637.1309598849456,
+        "Pearson_Correlation": 0.08296495541490681,
+        "Number_of_predictions": 1041,
+        "First_prediction_date": "2022-06-24",
+        "Last_prediction_date": "2026-09-04"
+    }
+}

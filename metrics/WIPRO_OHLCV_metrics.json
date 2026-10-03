@@ -1,0 +1,32 @@
+{
+    "company": "WIPRO_OHLCV",
+    "model": "Kronos Base",
+    "experiment": "Zero-Shot Baseline",
+    "fine_tuning": false,
+    "lora": false,
+    "window_size": 118,
+    "prediction_length": 1,
+    "prediction_method": "118 actual previous trading days -> next actual trading day",
+    "uses_predicted_values_as_input": false,
+    "optuna": true,
+    "optuna_best_parameters": {
+        "T": 0.7873353329456053,
+        "top_p": 0.6698692701577558
+    },
+    "metrics": {
+        "RMSE_decimal": 0.020289150434946182,
+        "MAE_decimal": 0.015177223976953784,
+        "MAPE_decimal": 4.167337917516638,
+        "RMSE_percent": 2.028915043494618,
+        "MAE_percent": 1.5177223976953784,
+        "MAPE_percent": 416.7337917516638,
+        "R2": -0.7014854123291725,
+        "Direction_Accuracy_percent": 50.91258405379443,
+        "Actual_Return_percent": -15.809569724347838,
+        "Predicted_Return_percent": 609.3734049040696,
+        "Pearson_Correlation": 0.028451670543591562,
+        "Number_of_predictions": 1041,
+        "First_prediction_date": "2022-06-24",
+        "Last_prediction_date": "2026-09-04"
+    }
+}

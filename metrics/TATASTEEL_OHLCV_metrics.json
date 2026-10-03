@@ -1,0 +1,32 @@
+{
+    "company": "TATASTEEL_OHLCV",
+    "model": "Kronos Base",
+    "experiment": "Zero-Shot Baseline",
+    "fine_tuning": false,
+    "lora": false,
+    "window_size": 118,
+    "prediction_length": 1,
+    "prediction_method": "118 actual previous trading days -> next actual trading day",
+    "uses_predicted_values_as_input": false,
+    "optuna": true,
+    "optuna_best_parameters": {
+        "T": 0.5291486622357027,
+        "top_p": 0.7624267033788024
+    },
+    "metrics": {
+        "RMSE_decimal": 0.02042424835160064,
+        "MAE_decimal": 0.014966617150037694,
+        "MAPE_decimal": 2.815705960742224,
+        "RMSE_percent": 2.042424835160064,
+        "MAE_percent": 1.4966617150037693,
+        "MAPE_percent": 281.5705960742224,
+        "R2": -0.4110152139757668,
+        "Direction_Accuracy_percent": 54.082612872238236,
+        "Actual_Return_percent": 124.40270943722527,
+        "Predicted_Return_percent": -38.58259926000731,
+        "Pearson_Correlation": 0.04764770419570492,
+        "Number_of_predictions": 1041,
+        "First_prediction_date": "2022-06-24",
+        "Last_prediction_date": "2026-09-04"
+    }
+}

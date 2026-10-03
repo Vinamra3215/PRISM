@@ -1,0 +1,32 @@
+{
+    "company": "BAJAJFINSV_OHLCV",
+    "model": "Kronos Base",
+    "experiment": "Zero-Shot Baseline",
+    "fine_tuning": false,
+    "lora": false,
+    "window_size": 118,
+    "prediction_length": 1,
+    "prediction_method": "118 actual previous trading days -> next actual trading day",
+    "uses_predicted_values_as_input": false,
+    "optuna": true,
+    "optuna_best_parameters": {
+        "T": 0.9192312420979202,
+        "top_p": 0.5824816162964729
+    },
+    "metrics": {
+        "RMSE_decimal": 0.01979744625695641,
+        "MAE_decimal": 0.01443956290508784,
+        "MAPE_decimal": 4.222516979352365,
+        "RMSE_percent": 1.979744625695641,
+        "MAE_percent": 1.443956290508784,
+        "MAPE_percent": 422.2516979352365,
+        "R2": -0.6155226241958938,
+        "Direction_Accuracy_percent": 52.44956772334294,
+        "Actual_Return_percent": 70.52068898293965,
+        "Predicted_Return_percent": 200.91544178092994,
+        "Pearson_Correlation": 0.01786955495123772,
+        "Number_of_predictions": 1041,
+        "First_prediction_date": "2022-06-24",
+        "Last_prediction_date": "2026-09-04"
+    }
+}

@@ -1,0 +1,32 @@
+{
+    "company": "POWERGRID_OHLCV",
+    "model": "Kronos Base",
+    "experiment": "Zero-Shot Baseline",
+    "fine_tuning": false,
+    "lora": false,
+    "window_size": 118,
+    "prediction_length": 1,
+    "prediction_method": "118 actual previous trading days -> next actual trading day",
+    "uses_predicted_values_as_input": false,
+    "optuna": true,
+    "optuna_best_parameters": {
+        "T": 0.7075668393181561,
+        "top_p": 0.7447917025456285
+    },
+    "metrics": {
+        "RMSE_decimal": 0.02025734164473311,
+        "MAE_decimal": 0.014763181887404974,
+        "MAPE_decimal": 3.0574966335989946,
+        "RMSE_percent": 2.025734164473311,
+        "MAE_percent": 1.4763181887404975,
+        "MAPE_percent": 305.74966335989944,
+        "R2": -0.6992604189882934,
+        "Direction_Accuracy_percent": 50.91258405379443,
+        "Actual_Return_percent": 70.06312770409697,
+        "Predicted_Return_percent": 267.59934940437336,
+        "Pearson_Correlation": 0.014697940167615667,
+        "Number_of_predictions": 1041,
+        "First_prediction_date": "2022-06-24",
+        "Last_prediction_date": "2026-09-04"
+    }
+}

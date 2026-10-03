@@ -1,0 +1,32 @@
+{
+    "company": "BHARTIARTL_OHLCV",
+    "model": "Kronos Base",
+    "experiment": "Zero-Shot Baseline",
+    "fine_tuning": false,
+    "lora": false,
+    "window_size": 118,
+    "prediction_length": 1,
+    "prediction_method": "118 actual previous trading days -> next actual trading day",
+    "uses_predicted_values_as_input": false,
+    "optuna": true,
+    "optuna_best_parameters": {
+        "T": 0.7737475916775014,
+        "top_p": 0.9349081420447538
+    },
+    "metrics": {
+        "RMSE_decimal": 0.01696386581776496,
+        "MAE_decimal": 0.01263867537553489,
+        "MAPE_decimal": 5.296484184871206,
+        "RMSE_percent": 1.6963865817764963,
+        "MAE_percent": 1.263867537553489,
+        "MAPE_percent": 529.6484184871206,
+        "R2": -0.7127214160428879,
+        "Direction_Accuracy_percent": 51.10470701248799,
+        "Actual_Return_percent": 178.7034180518913,
+        "Predicted_Return_percent": -69.2924254204455,
+        "Pearson_Correlation": -0.0055568719776526,
+        "Number_of_predictions": 1041,
+        "First_prediction_date": "2022-06-24",
+        "Last_prediction_date": "2026-09-04"
+    }
+}

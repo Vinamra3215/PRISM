@@ -1,0 +1,32 @@
+{
+    "company": "MAXHEALTH_OHLCV",
+    "model": "Kronos Base",
+    "experiment": "Zero-Shot Baseline",
+    "fine_tuning": false,
+    "lora": false,
+    "window_size": 118,
+    "prediction_length": 1,
+    "prediction_method": "118 actual previous trading days -> next actual trading day",
+    "uses_predicted_values_as_input": false,
+    "optuna": true,
+    "optuna_best_parameters": {
+        "T": 0.647865814550551,
+        "top_p": 0.6084520323709243
+    },
+    "metrics": {
+        "RMSE_decimal": 0.026294469721703892,
+        "MAE_decimal": 0.01956734372019371,
+        "MAPE_decimal": 3.408790237663787,
+        "RMSE_percent": 2.6294469721703893,
+        "MAE_percent": 1.956734372019371,
+        "MAPE_percent": 340.87902376637874,
+        "R2": -0.5726594532197982,
+        "Direction_Accuracy_percent": 51.39289145052833,
+        "Actual_Return_percent": 168.8139678956908,
+        "Predicted_Return_percent": -50.5955456352158,
+        "Pearson_Correlation": 0.03844013990966569,
+        "Number_of_predictions": 1041,
+        "First_prediction_date": "2022-06-24",
+        "Last_prediction_date": "2026-09-04"
+    }
+}

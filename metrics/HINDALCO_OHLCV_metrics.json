@@ -1,0 +1,32 @@
+{
+    "company": "HINDALCO_OHLCV",
+    "model": "Kronos Base",
+    "experiment": "Zero-Shot Baseline",
+    "fine_tuning": false,
+    "lora": false,
+    "window_size": 118,
+    "prediction_length": 1,
+    "prediction_method": "118 actual previous trading days -> next actual trading day",
+    "uses_predicted_values_as_input": false,
+    "optuna": true,
+    "optuna_best_parameters": {
+        "T": 0.6152478926752382,
+        "top_p": 0.586952841973304
+    },
+    "metrics": {
+        "RMSE_decimal": 0.023154865141666408,
+        "MAE_decimal": 0.017603176456733982,
+        "MAPE_decimal": 2.8209059353934354,
+        "RMSE_percent": 2.3154865141666408,
+        "MAE_percent": 1.7603176456733982,
+        "MAPE_percent": 282.09059353934356,
+        "R2": -0.5002185598319928,
+        "Direction_Accuracy_percent": 48.79923150816523,
+        "Actual_Return_percent": 218.32493091026123,
+        "Predicted_Return_percent": 11.798055498582528,
+        "Pearson_Correlation": 0.0011334720139170083,
+        "Number_of_predictions": 1041,
+        "First_prediction_date": "2022-06-24",
+        "Last_prediction_date": "2026-09-04"
+    }
+}

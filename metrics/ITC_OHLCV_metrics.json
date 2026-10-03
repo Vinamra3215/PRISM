@@ -1,0 +1,32 @@
+{
+    "company": "ITC_OHLCV",
+    "model": "Kronos Base",
+    "experiment": "Zero-Shot Baseline",
+    "fine_tuning": false,
+    "lora": false,
+    "window_size": 118,
+    "prediction_length": 1,
+    "prediction_method": "118 actual previous trading days -> next actual trading day",
+    "uses_predicted_values_as_input": false,
+    "optuna": true,
+    "optuna_best_parameters": {
+        "T": 1.0259163551935953,
+        "top_p": 0.7627510285780024
+    },
+    "metrics": {
+        "RMSE_decimal": 0.019164385943048933,
+        "MAE_decimal": 0.013329664765192744,
+        "MAPE_decimal": 4.441858368046906,
+        "RMSE_percent": 1.9164385943048934,
+        "MAE_percent": 1.3329664765192744,
+        "MAPE_percent": 444.18583680469055,
+        "R2": -1.608466106495218,
+        "Direction_Accuracy_percent": 47.070124879923156,
+        "Actual_Return_percent": 3.3036896268115346,
+        "Predicted_Return_percent": 752.6166511451938,
+        "Pearson_Correlation": -0.07393815827436266,
+        "Number_of_predictions": 1041,
+        "First_prediction_date": "2022-06-24",
+        "Last_prediction_date": "2026-09-04"
+    }
+}

@@ -1,0 +1,32 @@
+{
+    "company": "ULTRACEMCO_OHLCV",
+    "model": "Kronos Base",
+    "experiment": "Zero-Shot Baseline",
+    "fine_tuning": false,
+    "lora": false,
+    "window_size": 118,
+    "prediction_length": 1,
+    "prediction_method": "118 actual previous trading days -> next actual trading day",
+    "uses_predicted_values_as_input": false,
+    "optuna": true,
+    "optuna_best_parameters": {
+        "T": 0.851388767108047,
+        "top_p": 0.8580646007751687
+    },
+    "metrics": {
+        "RMSE_decimal": 0.019270763023213112,
+        "MAE_decimal": 0.014342488283019142,
+        "MAPE_decimal": 4.826020684939072,
+        "RMSE_percent": 1.927076302321311,
+        "MAE_percent": 1.4342488283019141,
+        "MAPE_percent": 482.6020684939072,
+        "R2": -0.9514670071212623,
+        "Direction_Accuracy_percent": 50.62439961575408,
+        "Actual_Return_percent": 110.8570765360557,
+        "Predicted_Return_percent": -21.504163785009567,
+        "Pearson_Correlation": 0.037074895012180115,
+        "Number_of_predictions": 1041,
+        "First_prediction_date": "2022-06-24",
+        "Last_prediction_date": "2026-09-04"
+    }
+}

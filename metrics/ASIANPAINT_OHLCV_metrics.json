@@ -1,0 +1,32 @@
+{
+    "company": "ASIANPAINT_OHLCV",
+    "model": "Kronos Base",
+    "experiment": "Zero-Shot Baseline",
+    "fine_tuning": false,
+    "lora": false,
+    "window_size": 118,
+    "prediction_length": 1,
+    "prediction_method": "118 actual previous trading days -> next actual trading day",
+    "uses_predicted_values_as_input": false,
+    "optuna": true,
+    "optuna_best_parameters": {
+        "T": 1.2512437163159569,
+        "top_p": 0.613885847103117
+    },
+    "metrics": {
+        "RMSE_decimal": 0.019139677169539987,
+        "MAE_decimal": 0.014054578543849935,
+        "MAPE_decimal": 4.88608012155616,
+        "RMSE_percent": 1.9139677169539988,
+        "MAE_percent": 1.4054578543849936,
+        "MAPE_percent": 488.60801215561594,
+        "R2": -1.1534373213949038,
+        "Direction_Accuracy_percent": 47.262247838616716,
+        "Actual_Return_percent": -8.371398246368456,
+        "Predicted_Return_percent": 810.3812749470453,
+        "Pearson_Correlation": -0.03644647518482831,
+        "Number_of_predictions": 1041,
+        "First_prediction_date": "2022-06-24",
+        "Last_prediction_date": "2026-09-04"
+    }
+}

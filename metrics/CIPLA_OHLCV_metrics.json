@@ -1,0 +1,32 @@
+{
+    "company": "CIPLA_OHLCV",
+    "model": "Kronos Base",
+    "experiment": "Zero-Shot Baseline",
+    "fine_tuning": false,
+    "lora": false,
+    "window_size": 118,
+    "prediction_length": 1,
+    "prediction_method": "118 actual previous trading days -> next actual trading day",
+    "uses_predicted_values_as_input": false,
+    "optuna": true,
+    "optuna_best_parameters": {
+        "T": 1.06952217955961,
+        "top_p": 0.6656703771038102
+    },
+    "metrics": {
+        "RMSE_decimal": 0.018916774647606886,
+        "MAE_decimal": 0.013890774886883794,
+        "MAPE_decimal": 4.3349261531739485,
+        "RMSE_percent": 1.8916774647606887,
+        "MAE_percent": 1.3890774886883794,
+        "MAPE_percent": 433.49261531739484,
+        "R2": -0.7992262611995387,
+        "Direction_Accuracy_percent": 50.720461095100866,
+        "Actual_Return_percent": 48.39021119923659,
+        "Predicted_Return_percent": 76.56796035193155,
+        "Pearson_Correlation": 0.0028135328017865426,
+        "Number_of_predictions": 1041,
+        "First_prediction_date": "2022-06-24",
+        "Last_prediction_date": "2026-09-04"
+    }
+}

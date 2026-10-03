@@ -1,0 +1,32 @@
+{
+    "company": "HEROMOTOCO_OHLCV",
+    "model": "Kronos Base",
+    "experiment": "Zero-Shot Baseline",
+    "fine_tuning": false,
+    "lora": false,
+    "window_size": 118,
+    "prediction_length": 1,
+    "prediction_method": "118 actual previous trading days -> next actual trading day",
+    "uses_predicted_values_as_input": false,
+    "optuna": true,
+    "optuna_best_parameters": {
+        "T": 0.8574632640103723,
+        "top_p": 0.8140674321432582
+    },
+    "metrics": {
+        "RMSE_decimal": 0.02289676897814191,
+        "MAE_decimal": 0.017344199293736175,
+        "MAPE_decimal": 4.056931316620536,
+        "RMSE_percent": 2.289676897814191,
+        "MAE_percent": 1.7344199293736176,
+        "MAPE_percent": 405.6931316620536,
+        "R2": -1.119115876434937,
+        "Direction_Accuracy_percent": 50.24015369836695,
+        "Actual_Return_percent": 98.1975171626992,
+        "Predicted_Return_percent": -4.684295670165195,
+        "Pearson_Correlation": 0.001563568556519131,
+        "Number_of_predictions": 1041,
+        "First_prediction_date": "2022-06-24",
+        "Last_prediction_date": "2026-09-04"
+    }
+}
