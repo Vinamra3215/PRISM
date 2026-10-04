@@ -1,0 +1,2 @@
+category,total_features,selected_features,correlation_threshold,selection_start,selection_end,selected_feature_names
+Category 4,12,7,0.7,2022-01-01,2023-12-31,"force_index_13d, mfi_14d, log_turnover, volume_momentum, volume_ratio_20d, ad_line, obv"

@@ -1,0 +1,32 @@
+{
+    "company": "COALINDIA_OHLCV",
+    "model": "Kronos Base",
+    "experiment": "Zero-Shot Baseline",
+    "fine_tuning": false,
+    "lora": false,
+    "window_size": 118,
+    "prediction_length": 1,
+    "prediction_method": "118 actual previous trading days -> next actual trading day",
+    "uses_predicted_values_as_input": false,
+    "optuna": true,
+    "optuna_best_parameters": {
+        "T": 1.0751944784438359,
+        "top_p": 0.5998801469234206
+    },
+    "metrics": {
+        "RMSE_decimal": 0.021356804592837,
+        "MAE_decimal": 0.01542235168802123,
+        "MAPE_decimal": 3.3675311890773836,
+        "RMSE_percent": 2.1356804592836998,
+        "MAE_percent": 1.542235168802123,
+        "MAPE_percent": 336.7531189077384,
+        "R2": -0.6970049083979488,
+        "Direction_Accuracy_percent": 50.24015369836695,
+        "Actual_Return_percent": 134.46233159128465,
+        "Predicted_Return_percent": -33.76244861393829,
+        "Pearson_Correlation": 0.013177234399438414,
+        "Number_of_predictions": 1041,
+        "First_prediction_date": "2022-06-24",
+        "Last_prediction_date": "2026-09-04"
+    }
+}

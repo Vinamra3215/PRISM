@@ -1,0 +1,11 @@
+feature,dropped_correlated_with,correlation,reason
+stochastic_k,rsi_7d,0.9428600885929308,Redundant - lower absolute RankIC
+williams_r,rsi_7d,0.9428600885929308,Redundant - lower absolute RankIC
+price_vs_sma_20,rsi_7d,0.9406507518613687,Redundant - lower absolute RankIC
+momentum_score,rsi_7d,0.8831412856916458,Redundant - lower absolute RankIC
+roc_12d,rsi_7d,0.8479658920665825,Redundant - lower absolute RankIC
+cci_20d,rsi_7d,0.9343123347139167,Redundant - lower absolute RankIC
+rsi_14d,rsi_7d,0.9222366856918341,Redundant - lower absolute RankIC
+ma_ratio_5_20,rsi_7d,0.7653437114017637,Redundant - lower absolute RankIC
+price_vs_sma_50,rsi_7d,0.7349175641074491,Redundant - lower absolute RankIC
+macd_signal,macd_line,0.9260161533240729,Redundant - lower absolute RankIC

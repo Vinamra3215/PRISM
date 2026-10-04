@@ -1,0 +1,32 @@
+{
+    "company": "ETERNAL_OHLCV",
+    "model": "Kronos Base",
+    "experiment": "Zero-Shot Baseline",
+    "fine_tuning": false,
+    "lora": false,
+    "window_size": 118,
+    "prediction_length": 1,
+    "prediction_method": "118 actual previous trading days -> next actual trading day",
+    "uses_predicted_values_as_input": false,
+    "optuna": true,
+    "optuna_best_parameters": {
+        "T": 0.7586297664160021,
+        "top_p": 0.7731868023957288
+    },
+    "metrics": {
+        "RMSE_decimal": 0.035056888148485676,
+        "MAE_decimal": 0.026579029228351012,
+        "MAPE_decimal": 3.37186625092785,
+        "RMSE_percent": 3.5056888148485674,
+        "MAE_percent": 2.657902922835101,
+        "MAPE_percent": 337.186625092785,
+        "R2": -0.7254946001231957,
+        "Direction_Accuracy_percent": 49.279538904899134,
+        "Actual_Return_percent": 364.0546165897588,
+        "Predicted_Return_percent": 13.659237854402196,
+        "Pearson_Correlation": 0.0015407870636705776,
+        "Number_of_predictions": 1041,
+        "First_prediction_date": "2022-06-24",
+        "Last_prediction_date": "2026-09-04"
+    }
+}

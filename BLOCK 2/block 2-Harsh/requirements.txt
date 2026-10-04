@@ -1,0 +1,5 @@
+lightgbm>=4.0,<5
+numpy>=1.26
+pandas>=2.0
+pyarrow>=14
+scipy>=1.11

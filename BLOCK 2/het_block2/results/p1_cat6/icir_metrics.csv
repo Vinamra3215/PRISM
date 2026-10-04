@@ -1,0 +1,13 @@
+feature,RankIC,ICIR,observations
+nifty50_daily_return,0.1214350265396541,,492
+nifty50_return_5d,0.05120408092038377,,488
+nifty50_rolling_vol_20d,-0.04692337070731767,,473
+india_vix_level,-0.01718773662930129,,492
+india_vix_change,-0.04869843740322017,,490
+nifty_bank_return,0.09853743980981368,,492
+nifty_it_return,0.05967746957227321,,492
+nifty_pharma_return,0.09586196216002224,,492
+nifty_auto_return,,,0
+nifty_metal_return,,,0
+nifty_energy_return,,,0
+usdinr_daily_return,-0.036762552139470245,,492

@@ -1,0 +1,32 @@
+{
+    "company": "M&M_OHLCV",
+    "model": "Kronos Base",
+    "experiment": "Zero-Shot Baseline",
+    "fine_tuning": false,
+    "lora": false,
+    "window_size": 118,
+    "prediction_length": 1,
+    "prediction_method": "118 actual previous trading days -> next actual trading day",
+    "uses_predicted_values_as_input": false,
+    "optuna": true,
+    "optuna_best_parameters": {
+        "T": 0.8770312256564776,
+        "top_p": 0.6489633132637896
+    },
+    "metrics": {
+        "RMSE_decimal": 0.023045313323815774,
+        "MAE_decimal": 0.017015732379450556,
+        "MAPE_decimal": 5.016572658766604,
+        "RMSE_percent": 2.3045313323815773,
+        "MAE_percent": 1.7015732379450557,
+        "MAPE_percent": 501.6572658766604,
+        "R2": -0.7568836928849194,
+        "Direction_Accuracy_percent": 50.62439961575408,
+        "Actual_Return_percent": 208.45578968698848,
+        "Predicted_Return_percent": -72.17777546687643,
+        "Pearson_Correlation": 0.011003989764960727,
+        "Number_of_predictions": 1041,
+        "First_prediction_date": "2022-06-24",
+        "Last_prediction_date": "2026-09-04"
+    }
+}

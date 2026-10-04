@@ -1,0 +1,10 @@
+{
+  "vix_normalized_low_quartile_cutoff": -1.043466567993164,
+  "vix_normalized_high_quartile_cutoff": 0.8404005765914917,
+  "low_vix_stock_days": 8350,
+  "high_vix_stock_days": 8350,
+  "mean_absolute_gamma_change_high_vs_low": 0.19449254870414734,
+  "mean_absolute_beta_change_high_vs_low": 0.17740696668624878,
+  "gamma_correlation_high_vs_low": 0.49788268476530884,
+  "beta_correlation_high_vs_low": 0.6385625884059418
+}

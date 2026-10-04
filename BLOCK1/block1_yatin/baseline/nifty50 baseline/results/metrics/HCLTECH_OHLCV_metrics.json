@@ -1,0 +1,32 @@
+{
+    "company": "HCLTECH_OHLCV",
+    "model": "Kronos Base",
+    "experiment": "Zero-Shot Baseline",
+    "fine_tuning": false,
+    "lora": false,
+    "window_size": 118,
+    "prediction_length": 1,
+    "prediction_method": "118 actual previous trading days -> next actual trading day",
+    "uses_predicted_values_as_input": false,
+    "optuna": true,
+    "optuna_best_parameters": {
+        "T": 0.5102764146308469,
+        "top_p": 0.5702212395670634
+    },
+    "metrics": {
+        "RMSE_decimal": 0.018757333579872623,
+        "MAE_decimal": 0.013660545845142457,
+        "MAPE_decimal": 3.6220183529095284,
+        "RMSE_percent": 1.8757333579872624,
+        "MAE_percent": 1.3660545845142458,
+        "MAPE_percent": 362.20183529095283,
+        "R2": -0.4671118530720286,
+        "Direction_Accuracy_percent": 50.91258405379443,
+        "Actual_Return_percent": 33.16859968227228,
+        "Predicted_Return_percent": 521.6219413001378,
+        "Pearson_Correlation": 0.004465572078999391,
+        "Number_of_predictions": 1041,
+        "First_prediction_date": "2022-06-24",
+        "Last_prediction_date": "2026-09-04"
+    }
+}

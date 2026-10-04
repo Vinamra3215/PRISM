@@ -1,0 +1,33 @@
+feature,abs_icir,icir_rank,xgb_rank,xgb_gain
+Return 10-day,0.0,21,1,0.073561825
+trend_strength,0.0943,11,2,0.064286076
+volatility_ratio_20d_60d,0.0712,12,3,0.053721547
+rolling_volatility_10d,0.0486,14,4,0.03177033
+Sector Relative Return,0.0,22,5,0.021235824
+Cross Sectional Return Z score,0.0,23,6,0.020406453
+atr_14d,0.0422,16,7,0.013126487
+Intraday Range,0.0,24,8,0.012626134
+rolling_skewness_20d,0.0422,15,9,0.00936419
+vol_weight_mom,0.0988,10,10,0.008603744
+Return 20-day,0.0,19,11,0.008579862
+rsi_vol_diverg,0.1108,8,12,0.007866504
+keltner_channel_position,0.2045,1,13,0.005100318
+macd_signal,0.039,17,14,0.0038788468
+Volume Ratio 5-day,0.0,20,15,0.0035808864
+Return 5-day,0.0,25,16,0.0001724497
+Volume Ratio 20-day,0.0,28,17,0.0
+rsi_14,0.1435,5,18,0.0
+macd_hist,0.1335,6,19,0.0
+rolling_kurtosis_20d,0.0494,13,20,0.0
+Open-Close Spread,0.0,27,21,0.0
+volatility_ratio_5d_20d,0.0182,18,22,0.0
+MFI,0.0,26,23,0.0
+VWAP Deviation,0.0,29,24,0.0
+consecutive_down_days,0.1833,2,25,0.0
+candle_direction,0.1727,3,26,0.0
+upper_shadow_ratio,0.1233,7,27,0.0
+Volume-Price Trend (VPT),0.0,30,28,0.0
+Volume Momentum,0.0,32,29,0.0
+Return Rank Percentile (20-day),0.0,31,30,0.0
+breakout_signal,0.1005,9,31,0.0
+mean_reversion,0.1635,4,32,0.0

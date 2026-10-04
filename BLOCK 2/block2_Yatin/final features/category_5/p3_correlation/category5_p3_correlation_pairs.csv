@@ -1,0 +1,22 @@
+feature_a,feature_b,spearman_correlation,absolute_correlation,correlation_class
+keltner_channel_position,bollinger_band_percent_b,0.9525418921942522,0.9525418921942522,HIGH > 0.70
+bollinger_band_percent_b,donchian_channel_position,0.9505433739087558,0.9505433739087558,HIGH > 0.70
+keltner_channel_position,donchian_channel_position,0.9425296819851835,0.9425296819851835,HIGH > 0.70
+consecutive_down_days,consecutive_up_days,-0.8674790641124689,0.8674790641124689,HIGH > 0.70
+consecutive_down_days,candle_direction,-0.6650188410864871,0.6650188410864871,MODERATE 0.40–0.70
+consecutive_up_days,candle_direction,0.6476361329245096,0.6476361329245096,MODERATE 0.40–0.70
+bollinger_band_percent_b,consecutive_up_days,0.3909648356836622,0.3909648356836622,LOW < 0.40
+bollinger_band_percent_b,consecutive_down_days,-0.38514248786910027,0.38514248786910027,LOW < 0.40
+donchian_channel_position,consecutive_up_days,0.38140404757205515,0.38140404757205515,LOW < 0.40
+donchian_channel_position,consecutive_down_days,-0.37595095329610234,0.37595095329610234,LOW < 0.40
+keltner_channel_position,consecutive_up_days,0.3676972666729205,0.3676972666729205,LOW < 0.40
+keltner_channel_position,consecutive_down_days,-0.36519231934156543,0.36519231934156543,LOW < 0.40
+donchian_channel_position,candle_direction,0.28840629120231,0.28840629120231,LOW < 0.40
+bollinger_band_percent_b,candle_direction,0.2823124804846317,0.2823124804846317,LOW < 0.40
+keltner_channel_position,candle_direction,0.26629130259607764,0.26629130259607764,LOW < 0.40
+candle_direction,upper_shadow_ratio,0.13402483802093718,0.13402483802093718,LOW < 0.40
+consecutive_up_days,upper_shadow_ratio,0.11411469373739296,0.11411469373739296,LOW < 0.40
+consecutive_down_days,upper_shadow_ratio,-0.1094386053115494,0.1094386053115494,LOW < 0.40
+keltner_channel_position,upper_shadow_ratio,0.042493450532566014,0.042493450532566014,LOW < 0.40
+bollinger_band_percent_b,upper_shadow_ratio,0.03678496949275298,0.03678496949275298,LOW < 0.40
+donchian_channel_position,upper_shadow_ratio,0.01865663919978569,0.01865663919978569,LOW < 0.40

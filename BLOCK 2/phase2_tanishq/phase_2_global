@@ -1,0 +1,149 @@
+import os
+from pathlib import Path
+import numpy as np
+import pandas as pd
+import lightgbm as lgb
+from scipy.stats import spearmanr
+
+DATA_PATH = Path("/home/soq/__shutupandbendover/tanishq/phase2_data/nifty50_phase2_calibration_2022_2023.parquet")
+OUTPUT_DIR = Path("/home/soq/__shutupandbendover/tanishq/phase2_results")
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+print("Loading calibration dataset (2022-2023)...")
+df = pd.read_parquet(DATA_PATH)
+
+# Exclude non-feature identifiers / raw inputs / metadata / target
+meta_cols = {
+    'date', 'symbol', 'open', 'high', 'low', 'close', 'adj_close', 'volume', 
+    'target_return_1d', 'repaired?', 'repaired'
+}
+
+# Keep only genuinely numeric columns
+feature_cols = []
+for c in df.columns:
+    if c not in meta_cols and not c.startswith('_'):
+        try:
+            df[c] = pd.to_numeric(df[c], errors='coerce')
+            feature_cols.append(c)
+        except Exception:
+            pass
+
+print(f"Total candidate numeric features for Phase 2: {len(feature_cols)}")
+
+# Clean infinities
+clean_df = df[feature_cols + ['target_return_1d']].replace([np.inf, -np.inf], np.nan)
+valid_mask = clean_df['target_return_1d'].notna()
+clean_df = clean_df[valid_mask]
+
+# -------------------------------------------------------------------------
+# 1. Compute Rank IC for all features to establish pruning priority
+# -------------------------------------------------------------------------
+print("Evaluating feature-level Rank IC against forward returns...")
+feature_ic = {}
+for f in feature_cols:
+    sub = clean_df[[f, 'target_return_1d']].dropna()
+    if len(sub) > 500 and sub[f].nunique() > 1:
+        rho, _ = spearmanr(sub[f], sub['target_return_1d'])
+        feature_ic[f] = abs(rho) if not np.isnan(rho) else 0.0
+    else:
+        feature_ic[f] = 0.0
+
+# -------------------------------------------------------------------------
+# 2. Global Correlation Matrix & Pruning (|rho| > 0.70)
+# -------------------------------------------------------------------------
+print("Computing global Spearman correlation matrix across all 8 categories...")
+corr_matrix = clean_df[feature_cols].corr(method='spearman')
+corr_matrix.to_csv(OUTPUT_DIR / "global_correlation_matrix.csv")
+
+# Greedy pruning: sort by |Rank IC| descending
+sorted_by_ic = sorted(feature_cols, key=lambda f: feature_ic[f], reverse=True)
+survivors = []
+dropped_records = []
+
+for f in sorted_by_ic:
+    should_drop = False
+    for kept in survivors:
+        rho = corr_matrix.loc[f, kept]
+        if abs(rho) > 0.70:
+            should_drop = True
+            dropped_records.append({
+                "dropped_feature": f,
+                "correlated_with": kept,
+                "spearman_rho": float(rho),
+                "ic_dropped": feature_ic[f],
+                "ic_kept": feature_ic[kept]
+            })
+            break
+    if not should_drop:
+        survivors.append(f)
+
+pd.DataFrame(dropped_records).to_csv(OUTPUT_DIR / "cross_category_dropped_features.csv", index=False)
+print(f"Cross-category pruning completed: {len(dropped_records)} dropped, {len(survivors)} surviving.")
+
+# -------------------------------------------------------------------------
+# 3. LightGBM GBDT Importance Ranking on Surviving Features
+# -------------------------------------------------------------------------
+print("Training LightGBM model on surviving features...")
+valid_target_mask = clean_df['target_return_1d'].notna()
+X = clean_df.loc[valid_target_mask, survivors].astype(np.float32)
+y = clean_df.loc[valid_target_mask, 'target_return_1d'].astype(np.float32)
+
+print(f"Dataset for LightGBM: {X.shape[0]} samples, {X.shape[1]} features")
+
+lgb_train = lgb.Dataset(X, label=y)
+params = {
+    'objective': 'regression',
+    'metric': 'rmse',
+    'learning_rate': 0.03,
+    'num_leaves': 31,
+    'feature_fraction': 0.8,
+    'verbose': -1,
+    'seed': 42
+}
+
+model = lgb.train(params, lgb_train, num_boost_round=150)
+
+# Feature importance: gain and split count
+importance_gain = model.feature_importance(importance_type='gain')
+importance_split = model.feature_importance(importance_type='split')
+
+feat_imp_df = pd.DataFrame({
+    'feature': survivors,
+    'importance_gain': importance_gain,
+    'importance_split': importance_split,
+    'rank_ic_abs': [feature_ic[f] for f in survivors]
+}).sort_values(by='importance_gain', ascending=False).reset_index(drop=True)
+
+feat_imp_df.to_csv(OUTPUT_DIR / "lightgbm_feature_importance.csv", index=False)
+
+# -------------------------------------------------------------------------
+# 4. Generate Final Summary Report (.txt)
+# -------------------------------------------------------------------------
+report_lines = [
+    "=" * 75,
+    "PRISM PHASE 2: GLOBAL FEATURE SELECTION & REDUNDANCY PRUNING REPORT",
+    "=" * 75,
+    f"Universe: NIFTY 50 Constituents (Pooled Panel)",
+    f"Calibration Window: 2022-01-01 to 2023-12-31 ({len(df)} rows)",
+    f"Initial Pooled Candidate Features: {len(feature_cols)}",
+    f"Cross-Category Redundancy Threshold: |rho| > 0.70",
+    f"Features Dropped via Multicollinearity: {len(dropped_records)}",
+    f"Final Global Feature Pool: {len(survivors)}",
+    "-" * 75,
+    "RANKED GLOBAL SURVIVORS (LIGHTGBM GAIN IMPORTANCE):",
+    "-" * 75,
+    f"{'Rank':<5} {'Feature':<30} {'Gain Importance':<18} {'Rank IC':<10}",
+    "-" * 75
+]
+
+for idx, row in feat_imp_df.iterrows():
+    report_lines.append(f"{idx+1:<5} {row['feature']:<30} {row['importance_gain']:<18.4f} {row['rank_ic_abs']:<10.4f}")
+
+report_lines.append("=" * 75)
+report_text = "\n".join(report_lines)
+
+with open(OUTPUT_DIR / "phase2_final_selected_features.txt", "w") as f:
+    f.write(report_text)
+
+print("\n" + report_text)
+print(f"\nAll deliverables written to: {OUTPUT_DIR}")

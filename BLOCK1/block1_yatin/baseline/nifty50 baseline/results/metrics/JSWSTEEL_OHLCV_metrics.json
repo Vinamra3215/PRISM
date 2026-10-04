@@ -1,0 +1,32 @@
+{
+    "company": "JSWSTEEL_OHLCV",
+    "model": "Kronos Base",
+    "experiment": "Zero-Shot Baseline",
+    "fine_tuning": false,
+    "lora": false,
+    "window_size": 118,
+    "prediction_length": 1,
+    "prediction_method": "118 actual previous trading days -> next actual trading day",
+    "uses_predicted_values_as_input": false,
+    "optuna": true,
+    "optuna_best_parameters": {
+        "T": 0.6217669570441501,
+        "top_p": 0.5999799320303759
+    },
+    "metrics": {
+        "RMSE_decimal": 0.01788667559018577,
+        "MAE_decimal": 0.013379279601484493,
+        "MAPE_decimal": 2.933045006688433,
+        "RMSE_percent": 1.788667559018577,
+        "MAE_percent": 1.3379279601484493,
+        "MAPE_percent": 293.3045006688433,
+        "R2": -0.36762238830142024,
+        "Direction_Accuracy_percent": 52.833813640730064,
+        "Actual_Return_percent": 137.05160945756006,
+        "Predicted_Return_percent": 262.0615147075403,
+        "Pearson_Correlation": 0.09756261043855406,
+        "Number_of_predictions": 1041,
+        "First_prediction_date": "2022-06-24",
+        "Last_prediction_date": "2026-09-04"
+    }
+}

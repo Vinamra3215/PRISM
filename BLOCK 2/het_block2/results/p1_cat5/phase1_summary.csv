@@ -1,0 +1,2 @@
+category,total_features,selected_features,correlation_threshold,selection_start,selection_end,selected_feature_names
+Category 5,10,7,0.7,2022-01-01,2023-12-31,"bollinger_pct_b, consecutive_down_days, candle_direction, upper_shadow_ratio, body_ratio, bollinger_band_width, lower_shadow_ratio"

@@ -1,0 +1,18 @@
+{
+    "Predictions": 1041,
+    "RMSE": 1.695803385516615,
+    "MAE": 1.244758538408499,
+    "MAPE": 280.3669707802027,
+    "R2": -0.5744561274904185,
+    "Direction Accuracy": 49.23076923076923,
+    "Actual Return": 24.97056322218483,
+    "Predicted Return": 25.63870126355785,
+    "Pearson Correlation": -0.03143375313759153,
+    "Company": "KOTAKBANK",
+    "Lookback": 118,
+    "Forecast Horizon": 1,
+    "Epochs": 25,
+    "LoRA Rank": 8,
+    "LoRA Alpha": 16,
+    "LoRA Dropout": 0.05
+}

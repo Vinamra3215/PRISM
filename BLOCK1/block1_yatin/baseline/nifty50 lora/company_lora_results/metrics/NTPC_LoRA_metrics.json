@@ -1,0 +1,18 @@
+{
+    "Predictions": 1041,
+    "RMSE": 1.987022933278752,
+    "MAE": 1.4854125393874746,
+    "MAPE": 309.0265771833439,
+    "R2": -0.711533102109942,
+    "Direction Accuracy": 47.5,
+    "Actual Return": 143.41140932895064,
+    "Predicted Return": 143.78539485968727,
+    "Pearson Correlation": -0.013829501517347227,
+    "Company": "NTPC",
+    "Lookback": 118,
+    "Forecast Horizon": 1,
+    "Epochs": 25,
+    "LoRA Rank": 8,
+    "LoRA Alpha": 16,
+    "LoRA Dropout": 0.05
+}

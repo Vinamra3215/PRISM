@@ -1,0 +1,32 @@
+{
+    "company": "INDUSINDBK_OHLCV",
+    "model": "Kronos Base",
+    "experiment": "Zero-Shot Baseline",
+    "fine_tuning": false,
+    "lora": false,
+    "window_size": 118,
+    "prediction_length": 1,
+    "prediction_method": "118 actual previous trading days -> next actual trading day",
+    "uses_predicted_values_as_input": false,
+    "optuna": true,
+    "optuna_best_parameters": {
+        "T": 1.4372046109731256,
+        "top_p": 0.5373617840952424
+    },
+    "metrics": {
+        "RMSE_decimal": 0.02956468664863283,
+        "MAE_decimal": 0.0196394131753386,
+        "MAPE_decimal": 5.275594070380271,
+        "RMSE_percent": 2.956468664863283,
+        "MAE_percent": 1.9639413175338598,
+        "MAPE_percent": 527.5594070380271,
+        "R2": -1.0846086823896144,
+        "Direction_Accuracy_percent": 49.375600384245914,
+        "Actual_Return_percent": 28.479518990567843,
+        "Predicted_Return_percent": 1481.1489812251043,
+        "Pearson_Correlation": -0.01876525165283362,
+        "Number_of_predictions": 1041,
+        "First_prediction_date": "2022-06-24",
+        "Last_prediction_date": "2026-09-04"
+    }
+}

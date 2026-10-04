@@ -1,0 +1,44 @@
+open
+high
+low
+close
+volume
+nifty_close
+vix_close
+bank_close
+pharma_close
+auto_close
+Return 5-day
+Return 10-day
+Return 20-day
+Intraday Range
+Open-Close Spread
+52-Week High Distance
+rolling_volatility_10d
+volatility_ratio_5d_20d
+volatility_ratio_20d_60d
+rolling_skewness_20d
+rolling_kurtosis_20d
+atr_14d
+ma_ratio_50_200
+macd_signal
+macd_hist
+rsi_14
+Volume Ratio 20-day
+Volume Ratio 5-day
+VWAP Deviation
+Volume Momentum
+MFI
+Volume-Price Trend (VPT)
+upper_shadow_ratio
+candle_direction
+consecutive_down_days
+keltner_channel_position
+Cross Sectional Return Z score
+Sector Relative Return
+Return Rank Percentile (20-day)
+breakout_signal
+mean_reversion
+rsi_vol_diverg
+trend_strength
+vol_weight_mom

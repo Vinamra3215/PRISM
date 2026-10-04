@@ -1,0 +1,32 @@
+{
+    "company": "AXISBANK_OHLCV",
+    "model": "Kronos Base",
+    "experiment": "Zero-Shot Baseline",
+    "fine_tuning": false,
+    "lora": false,
+    "window_size": 118,
+    "prediction_length": 1,
+    "prediction_method": "118 actual previous trading days -> next actual trading day",
+    "uses_predicted_values_as_input": false,
+    "optuna": true,
+    "optuna_best_parameters": {
+        "T": 0.591477589224851,
+        "top_p": 0.5658997513381778
+    },
+    "metrics": {
+        "RMSE_decimal": 0.01762395595135582,
+        "MAE_decimal": 0.013046704903630222,
+        "MAPE_decimal": 3.1756347838541212,
+        "RMSE_percent": 1.762395595135582,
+        "MAE_percent": 1.3046704903630222,
+        "MAPE_percent": 317.5634783854121,
+        "R2": -0.4740014617995445,
+        "Direction_Accuracy_percent": 48.89529298751201,
+        "Actual_Return_percent": 102.27219343495034,
+        "Predicted_Return_percent": 81.00608524198856,
+        "Pearson_Correlation": 0.045261962685832303,
+        "Number_of_predictions": 1041,
+        "First_prediction_date": "2022-06-24",
+        "Last_prediction_date": "2026-09-04"
+    }
+}

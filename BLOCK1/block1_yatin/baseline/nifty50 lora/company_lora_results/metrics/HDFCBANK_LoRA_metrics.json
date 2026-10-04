@@ -1,0 +1,18 @@
+{
+    "Predictions": 1041,
+    "RMSE": 1.6223990325383888,
+    "MAE": 1.1946015973826458,
+    "MAPE": 363.0989414290997,
+    "R2": -0.7176858447302554,
+    "Direction Accuracy": 49.03846153846153,
+    "Actual Return": 5.200169877722294,
+    "Predicted Return": 4.644667922415291,
+    "Pearson Correlation": -0.04865805547921955,
+    "Company": "HDFCBANK",
+    "Lookback": 118,
+    "Forecast Horizon": 1,
+    "Epochs": 25,
+    "LoRA Rank": 8,
+    "LoRA Alpha": 16,
+    "LoRA Dropout": 0.05
+}

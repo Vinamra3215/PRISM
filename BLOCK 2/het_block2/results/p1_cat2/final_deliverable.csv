@@ -1,0 +1,13 @@
+feature,rankic,icir,dropped_correlated_with,verdict
+volatility_ratio_20d_60d,-0.01190229739056144,-0.0726900663070529,—,KEEP
+rolling_kurtosis_20d,-0.00701187859646237,-0.047024484724416026,—,KEEP
+atr_14d,-0.00790644637911161,-0.0417278105365882,—,KEEP
+rolling_volatility_20d,-0.006706193304754919,-0.03572374981877289,—,KEEP
+rolling_skewness_20d,-0.004818713905421561,-0.029646134071815402,—,KEEP
+volatility_ratio_5d_20d,0.0017516994656590385,0.010161976779950748,—,KEEP
+rolling_volatility_5d,-0.0009460031170167109,-0.005159907330784631,Dropped — corr 0.7136 with volatility_ratio_5d_20d,DISCARD (Redundant)
+rolling_volatility_10d,-0.005951784457683461,-0.0313573224386469,Dropped — corr 0.8107 with rolling_volatility_20d,DISCARD (Redundant)
+rolling_volatility_60d,0.00411508750414988,0.020121087314279244,Dropped — corr 0.7843 with rolling_volatility_20d,DISCARD (Redundant)
+normalized_atr,-0.00523279499259045,-0.024861237610553734,Dropped — corr 0.8663 with rolling_volatility_20d,DISCARD (Redundant)
+garman_klass_volatility,0.0027008604012958752,0.013228689791686217,Dropped — corr 0.8326 with rolling_volatility_20d,DISCARD (Redundant)
+parkinson_volatility,-0.0008829583704654247,-0.004313024403356029,Dropped — corr 0.8786 with rolling_volatility_20d,DISCARD (Redundant)

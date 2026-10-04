@@ -1,0 +1,33 @@
+{
+  "purpose": "feature ranking only; not a final prediction model",
+  "data_path": "/home/soq/__shutupandbendover/tanishq/phase2_data/nifty50_phase2_calibration_2022_2023.parquet",
+  "candidate_features": 43,
+  "stocks": 50,
+  "calibration_rows": 24246,
+  "train_rows": 12103,
+  "train_feature_dates": [
+    "2022-01-03",
+    "2022-12-29"
+  ],
+  "validation_rows": 12094,
+  "validation_feature_dates": [
+    "2023-01-02",
+    "2023-12-29"
+  ],
+  "num_boost_round": 300,
+  "lightgbm_version": "4.7.0",
+  "validation": {
+    "rmse": 0.016105361898267705,
+    "mae": 0.01063993057183181,
+    "r2": -0.048421048651659415,
+    "spearman": 0.06652572124954537,
+    "mean_daily_rank_ic": 0.015065295007613302,
+    "daily_rank_ic_ir": 0.08792004733053901
+  },
+  "constant_mean_baseline": {
+    "rmse": 0.015755707891052434,
+    "mae": 0.010371996995519828,
+    "r2": -0.003391912141430309,
+    "spearman": null
+  }
+}

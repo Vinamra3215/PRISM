@@ -1,0 +1,7 @@
+feature,dropped_correlated_with,correlation,reason
+rolling_volatility_10d,rolling_volatility_20d,0.8107311472624767,Redundant - lower absolute RankIC
+normalized_atr,rolling_volatility_20d,0.8663212870919703,Redundant - lower absolute RankIC
+rolling_volatility_60d,rolling_volatility_20d,0.7842867838603939,Redundant - lower absolute RankIC
+garman_klass_volatility,rolling_volatility_20d,0.8325851397878753,Redundant - lower absolute RankIC
+rolling_volatility_5d,volatility_ratio_5d_20d,0.7135950685999722,Redundant - lower absolute RankIC
+parkinson_volatility,rolling_volatility_20d,0.8785703631340727,Redundant - lower absolute RankIC

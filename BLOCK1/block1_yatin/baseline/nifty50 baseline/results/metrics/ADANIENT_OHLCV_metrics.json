@@ -1,0 +1,32 @@
+{
+    "company": "ADANIENT_OHLCV",
+    "model": "Kronos Base",
+    "experiment": "Zero-Shot Baseline",
+    "fine_tuning": false,
+    "lora": false,
+    "window_size": 118,
+    "prediction_length": 1,
+    "prediction_method": "118 actual previous trading days -> next actual trading day",
+    "uses_predicted_values_as_input": false,
+    "optuna": true,
+    "optuna_best_parameters": {
+        "T": 0.9808858855905647,
+        "top_p": 0.663453816273532
+    },
+    "metrics": {
+        "RMSE_decimal": 0.04478780276968218,
+        "MAE_decimal": 0.02517230693771653,
+        "MAPE_decimal": 4.356821877848574,
+        "RMSE_percent": 4.478780276968218,
+        "MAE_percent": 2.517230693771653,
+        "MAPE_percent": 435.68218778485743,
+        "R2": -1.054340734403536,
+        "Direction_Accuracy_percent": 49.4716618635927,
+        "Actual_Return_percent": 39.21860658394682,
+        "Predicted_Return_percent": 1344.9026600748994,
+        "Pearson_Correlation": 0.007039542197597742,
+        "Number_of_predictions": 1041,
+        "First_prediction_date": "2022-06-24",
+        "Last_prediction_date": "2026-09-04"
+    }
+}

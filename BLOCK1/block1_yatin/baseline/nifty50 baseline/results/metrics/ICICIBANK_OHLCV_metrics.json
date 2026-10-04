@@ -1,0 +1,32 @@
+{
+    "company": "ICICIBANK_OHLCV",
+    "model": "Kronos Base",
+    "experiment": "Zero-Shot Baseline",
+    "fine_tuning": false,
+    "lora": false,
+    "window_size": 118,
+    "prediction_length": 1,
+    "prediction_method": "118 actual previous trading days -> next actual trading day",
+    "uses_predicted_values_as_input": false,
+    "optuna": true,
+    "optuna_best_parameters": {
+        "T": 0.5500274010097729,
+        "top_p": 0.5880262407307038
+    },
+    "metrics": {
+        "RMSE_decimal": 0.013539116081139668,
+        "MAE_decimal": 0.010388081136655469,
+        "MAPE_decimal": 3.3803191479563193,
+        "RMSE_percent": 1.3539116081139668,
+        "MAE_percent": 1.038808113665547,
+        "MAPE_percent": 338.0319147956319,
+        "R2": -0.35530082694643994,
+        "Direction_Accuracy_percent": 50.43227665706051,
+        "Actual_Return_percent": 103.56145340402767,
+        "Predicted_Return_percent": 106.61892782227977,
+        "Pearson_Correlation": 0.0778076315311959,
+        "Number_of_predictions": 1041,
+        "First_prediction_date": "2022-06-24",
+        "Last_prediction_date": "2026-09-04"
+    }
+}

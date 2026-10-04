@@ -1,0 +1,18 @@
+{
+    "Predictions": 1041,
+    "RMSE": 1.8510457248923264,
+    "MAE": 1.3716178031759474,
+    "MAPE": 482.00886529831575,
+    "R2": -0.8356787353701638,
+    "Direction Accuracy": 47.21153846153846,
+    "Actual Return": 125.35432003106965,
+    "Predicted Return": 127.13779838120716,
+    "Pearson Correlation": 0.019311251872857614,
+    "Company": "APOLLOHOSP",
+    "Lookback": 118,
+    "Forecast Horizon": 1,
+    "Epochs": 25,
+    "LoRA Rank": 8,
+    "LoRA Alpha": 16,
+    "LoRA Dropout": 0.05
+}

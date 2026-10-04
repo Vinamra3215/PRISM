@@ -1,0 +1,32 @@
+{
+    "company": "SUNPHARMA_OHLCV",
+    "model": "Kronos Base",
+    "experiment": "Zero-Shot Baseline",
+    "fine_tuning": false,
+    "lora": false,
+    "window_size": 118,
+    "prediction_length": 1,
+    "prediction_method": "118 actual previous trading days -> next actual trading day",
+    "uses_predicted_values_as_input": false,
+    "optuna": true,
+    "optuna_best_parameters": {
+        "T": 0.6595705966057444,
+        "top_p": 0.8831893373691515
+    },
+    "metrics": {
+        "RMSE_decimal": 0.01578531560095904,
+        "MAE_decimal": 0.01158831398556075,
+        "MAPE_decimal": 4.545909210353631,
+        "RMSE_percent": 1.578531560095904,
+        "MAE_percent": 1.158831398556075,
+        "MAPE_percent": 454.5909210353631,
+        "R2": -0.7479016114354828,
+        "Direction_Accuracy_percent": 51.39289145052833,
+        "Actual_Return_percent": 130.20971557721728,
+        "Predicted_Return_percent": -22.11366185916377,
+        "Pearson_Correlation": 0.005977079257631041,
+        "Number_of_predictions": 1041,
+        "First_prediction_date": "2022-06-24",
+        "Last_prediction_date": "2026-09-04"
+    }
+}

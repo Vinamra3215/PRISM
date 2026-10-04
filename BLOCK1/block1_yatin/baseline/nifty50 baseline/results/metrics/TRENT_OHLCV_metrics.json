@@ -1,0 +1,32 @@
+{
+    "company": "TRENT_OHLCV",
+    "model": "Kronos Base",
+    "experiment": "Zero-Shot Baseline",
+    "fine_tuning": false,
+    "lora": false,
+    "window_size": 118,
+    "prediction_length": 1,
+    "prediction_method": "118 actual previous trading days -> next actual trading day",
+    "uses_predicted_values_as_input": false,
+    "optuna": true,
+    "optuna_best_parameters": {
+        "T": 1.0036248831615133,
+        "top_p": 0.549565941602379
+    },
+    "metrics": {
+        "RMSE_decimal": 0.03219624039396159,
+        "MAE_decimal": 0.02214794355352269,
+        "MAPE_decimal": 5.035121071583117,
+        "RMSE_percent": 3.219624039396159,
+        "MAE_percent": 2.214794355352269,
+        "MAPE_percent": 503.5121071583117,
+        "R2": -0.8032950979539819,
+        "Direction_Accuracy_percent": 46.493756003842456,
+        "Actual_Return_percent": 177.05753823743575,
+        "Predicted_Return_percent": 501.82816257880154,
+        "Pearson_Correlation": -0.04238403230159539,
+        "Number_of_predictions": 1041,
+        "First_prediction_date": "2022-06-24",
+        "Last_prediction_date": "2026-09-04"
+    }
+}

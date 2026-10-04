@@ -1,0 +1,2 @@
+feature,dropped_correlated_with,correlation,reason
+open_close_spread,log_return_1d,0.8717801009479174,Redundant - lower absolute RankIC

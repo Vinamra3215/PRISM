@@ -1,0 +1,39 @@
+tepc3_final_selection.py
+--- STEP C3: Final Feature Set Selection View ---
+
+=======================================================
+FINAL CANDIDATES FOR MANUAL SELECTION:
+=======================================================
+                        feature  abs_icir  icir_rank  xgb_rank  xgb_gain
+                  Return 10-day    0.0000         21         1  0.073562
+                 trend_strength    0.0943         11         2  0.064286
+       volatility_ratio_20d_60d    0.0712         12         3  0.053722
+         rolling_volatility_10d    0.0486         14         4  0.031770
+         Sector Relative Return    0.0000         22         5  0.021236
+ Cross Sectional Return Z score    0.0000         23         6  0.020406
+                        atr_14d    0.0422         16         7  0.013126
+                 Intraday Range    0.0000         24         8  0.012626
+           rolling_skewness_20d    0.0422         15         9  0.009364
+                 vol_weight_mom    0.0988         10        10  0.008604
+                  Return 20-day    0.0000         19        11  0.008580
+                 rsi_vol_diverg    0.1108          8        12  0.007867
+       keltner_channel_position    0.2045          1        13  0.005100
+                    macd_signal    0.0390         17        14  0.003879
+             Volume Ratio 5-day    0.0000         20        15  0.003581
+                   Return 5-day    0.0000         25        16  0.000172
+            Volume Ratio 20-day    0.0000         28        17  0.000000
+                         rsi_14    0.1435          5        18  0.000000
+                      macd_hist    0.1335          6        19  0.000000
+           rolling_kurtosis_20d    0.0494         13        20  0.000000
+              Open-Close Spread    0.0000         27        21  0.000000
+        volatility_ratio_5d_20d    0.0182         18        22  0.000000
+                            MFI    0.0000         26        23  0.000000
+                 VWAP Deviation    0.0000         29        24  0.000000
+          consecutive_down_days    0.1833          2        25  0.000000
+               candle_direction    0.1727          3        26  0.000000
+             upper_shadow_ratio    0.1233          7        27  0.000000
+       Volume-Price Trend (VPT)    0.0000         30        28  0.000000
+                Volume Momentum    0.0000         32        29  0.000000
+Return Rank Percentile (20-day)    0.0000         31        30  0.000000
+                breakout_signal    0.1005          9        31  0.000000
+                 mean_reversion    0.1635          4        32  0.000000

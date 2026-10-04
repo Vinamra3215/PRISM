@@ -1,0 +1,11 @@
+feature,total_rows,missing_rows,missing_pct
+cross_sectional_return_zscore,58496,300,0.512855579868709
+cross_sectional_volume_zscore,58496,250,0.4273796498905908
+cross_sectional_volatility_zscore,58496,1000,1.7095185995623632
+return_rank_percentile_20d,58496,1000,1.7095185995623632
+volume_rank_percentile,58496,0,0.0
+sector_relative_return,58496,42371,72.4340125820569
+market_relative_return,58496,1250,2.1368982494529543
+beta_60d,58496,11500,19.65946389496718
+idiosyncratic_volatility,58496,14950,25.55730306345733
+relative_strength_vs_nifty,58496,1000,1.7095185995623632

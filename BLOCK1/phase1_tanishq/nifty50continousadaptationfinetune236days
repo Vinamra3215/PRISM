@@ -1,0 +1,489 @@
+import os
+import sys
+import math
+import numpy as np
+import pandas as pd
+import torch
+import torch.nn as nn
+from torch.utils.data import Dataset, DataLoader
+import optuna
+import yfinance as yf
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+from scipy.stats import pearsonr
+from peft import LoraConfig, get_peft_model
+
+# ------------------------------------------------------------------
+# 0. Path Resolution & Module Imports
+# ------------------------------------------------------------------
+KRONOS_REPO_PATH = "/home/soq/Kronos"
+if KRONOS_REPO_PATH not in sys.path:
+    sys.path.insert(0, KRONOS_REPO_PATH)
+
+from model import Kronos, KronosTokenizer, KronosPredictor
+from model.kronos import calc_time_stamps
+
+optuna.logging.set_verbosity(optuna.logging.WARNING)
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+# ------------------------------------------------------------------
+# 1. Fetch NIFTY 50 Continuous Data (6 Features)
+# ------------------------------------------------------------------
+def fetch_nifty50_data():
+    print("Fetching official NIFTY 50 (^NSEI) continuous data...")
+    ticker = yf.Ticker("^NSEI")
+    df = ticker.history(start="2022-01-01", interval="1d").reset_index()
+
+    if df.empty:
+        raise ValueError("Failed to fetch data from yfinance.")
+
+    df = df[['Date', 'Open', 'High', 'Low', 'Close', 'Volume']].copy()
+    df.columns = ['timestamps', 'open', 'high', 'low', 'close', 'volume']
+    df['timestamps'] = pd.to_datetime(df['timestamps']).dt.tz_localize(None)
+
+    # 6th required feature: Amount / Turnover
+    df['amount'] = df['close'] * df['volume']
+
+    print(f"Total Trading Sessions Downloaded: {len(df)} (From {df['timestamps'].iloc[0].strftime('%Y-%m-%d')} to {df['timestamps'].iloc[-1].strftime('%Y-%m-%d')})")
+    return df
+
+# ------------------------------------------------------------------
+# 2. Tokenized Dataset with Dynamic Codebook Bounds Clamping
+# ------------------------------------------------------------------
+class KronosNativeDataset(Dataset):
+    def __init__(self, df, tokenizer, s1_max_idx, s2_max_idx, lookback=64, pred_len=1):
+        self.df = df.reset_index(drop=True)
+        self.tokenizer = tokenizer
+        self.s1_max_idx = s1_max_idx
+        self.s2_max_idx = s2_max_idx
+        self.lookback = lookback
+        self.pred_len = pred_len
+        self.raw_kbars = self.df[['open', 'high', 'low', 'close', 'volume', 'amount']].values.astype(np.float32)
+        self.timestamps = pd.Series(pd.to_datetime(self.df['timestamps'])).reset_index(drop=True)
+
+    def __len__(self):
+        return max(0, len(self.df) - (self.lookback + self.pred_len) + 1)
+
+    def __getitem__(self, idx):
+        full_slice = self.raw_kbars[idx : idx + self.lookback + self.pred_len].copy()
+
+        # Match KronosPredictor's feature-wise standardization so the adapter sees
+        # the same token distribution during fine-tuning and inference.
+        # Compute scaling from the observed context only. This avoids using the
+        # next bar's values to prepare the token the model is asked to predict.
+        context_slice = full_slice[:self.lookback]
+        mean = np.mean(context_slice, axis=0, keepdims=True)
+        std = np.std(context_slice, axis=0, keepdims=True)
+        norm_slice = np.clip((full_slice - mean) / (std + 1e-5), -5.0, 5.0)
+
+        # KronosPredictor moves the shared tokenizer to its device. Encode on that
+        # device, then return CPU tensors so DataLoader can batch them safely.
+        tokenizer_device = next(self.tokenizer.parameters()).device
+        seq_tensor = torch.from_numpy(norm_slice).unsqueeze(0).to(tokenizer_device)
+
+        with torch.no_grad():
+            # half=True returns the separate coarse (s1) and fine (s2) streams.
+            # Without it, encode() returns one composite token stream.
+            tokens = self.tokenizer.encode(seq_tensor, half=True)
+            if isinstance(tokens, (tuple, list)):
+                s1_tokens, s2_tokens = tokens[0], tokens[1]
+            else:
+                # Compatibility fallback for tokenizer versions without half=True.
+                s1_tokens = tokens >> self.tokenizer.s2_bits
+                s2_tokens = tokens & ((1 << self.tokenizer.s2_bits) - 1)
+
+        if isinstance(s1_tokens, torch.Tensor):
+            s1_ids = s1_tokens.squeeze(0).to(dtype=torch.long, device='cpu')
+            s2_ids = s2_tokens.squeeze(0).to(dtype=torch.long, device='cpu')
+        else:
+            s1_ids = torch.tensor(s1_tokens, dtype=torch.long).squeeze(0)
+            s2_ids = torch.tensor(s2_tokens, dtype=torch.long).squeeze(0)
+
+        # Strictly clamp within each individual embedding table's exact dimensions
+        s1_ids = torch.clamp(s1_ids, 0, self.s1_max_idx)
+        s2_ids = torch.clamp(s2_ids, 0, self.s2_max_idx)
+
+        timestamps = self.timestamps.iloc[idx : idx + self.lookback + self.pred_len]
+        stamps = torch.from_numpy(calc_time_stamps(timestamps).values.astype(np.float32))
+
+        return {"s1_ids": s1_ids, "s2_ids": s2_ids, "stamp": stamps}
+
+# ------------------------------------------------------------------
+# 3. Model Training Helper
+# ------------------------------------------------------------------
+def train_kronos_lora(model, train_loader, epochs=3, lr=1e-4, weight_decay=1e-2):
+    if len(train_loader.dataset) == 0:
+        raise ValueError("Training data must contain more than lookback + pred_len - 1 rows.")
+
+    model.train()
+    optimizer = torch.optim.AdamW(
+        (p for p in model.parameters() if p.requires_grad), lr=lr, weight_decay=weight_decay
+    )
+    criterion = nn.CrossEntropyLoss()
+
+    for _ in range(epochs):
+        for batch in train_loader:
+            s1_ids = batch["s1_ids"].to(device)
+            s2_ids = batch["s2_ids"].to(device)
+            stamp = batch["stamp"].to(device)
+
+            optimizer.zero_grad()
+            out = model(
+                s1_ids=s1_ids,
+                s2_ids=s2_ids,
+                stamp=stamp,
+                use_teacher_forcing=True,
+                s1_targets=s1_ids,
+            )
+
+            if isinstance(out, (tuple, list)):
+                s1_logits, s2_logits = out[0], out[1]
+            elif hasattr(out, "s1_logits") and hasattr(out, "s2_logits"):
+                s1_logits, s2_logits = out.s1_logits, out.s2_logits
+            else:
+                s1_logits, s2_logits = out, out
+
+            loss_s1 = criterion(
+                s1_logits[:, :-1, :].reshape(-1, s1_logits.size(-1)),
+                s1_ids[:, 1:].reshape(-1),
+            )
+            loss_s2 = criterion(
+                s2_logits[:, :-1, :].reshape(-1, s2_logits.size(-1)),
+                s2_ids[:, 1:].reshape(-1),
+            )
+            total_loss = loss_s1 + loss_s2
+
+            total_loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+            optimizer.step()
+
+# ------------------------------------------------------------------
+# 4. Optuna Hyperparameter Optimization on Initial Base Window
+# ------------------------------------------------------------------
+df = fetch_nifty50_data()
+
+if len(df) <= 236:
+    raise ValueError("At least 237 NIFTY 50 sessions are required for the 236-day walk-forward setup.")
+
+local_ckpt_dir = os.path.join(KRONOS_REPO_PATH, "kronos_checkpoints")
+model_path = os.path.join(local_ckpt_dir, "Kronos-base") if os.path.exists(os.path.join(local_ckpt_dir, "Kronos-base")) else "NeoQuasar/Kronos-base"
+tok_path = os.path.join(local_ckpt_dir, "Kronos-Tokenizer-base") if os.path.exists(os.path.join(local_ckpt_dir, "Kronos-Tokenizer-base")) else "NeoQuasar/Kronos-Tokenizer-base"
+
+print(f"\nLoading Pre-Trained Kronos Foundation Model from: {model_path}...")
+tokenizer = KronosTokenizer.from_pretrained(tok_path).eval()
+
+# Extract actual embedding table sizes from base model
+probe_model = Kronos.from_pretrained(model_path)
+if hasattr(probe_model, "embedding") and hasattr(probe_model.embedding, "emb_s1"):
+    S1_MAX_IDX = probe_model.embedding.emb_s1.num_embeddings - 1
+    S2_MAX_IDX = probe_model.embedding.emb_s2.num_embeddings - 1
+else:
+    S1_MAX_IDX = 2047
+    S2_MAX_IDX = 2047
+
+print(f"Verified Codebook Bounds: s1_max={S1_MAX_IDX}, s2_max={S2_MAX_IDX}")
+del probe_model
+
+TARGET_LORA_MODULES = ["q_proj", "k_proj", "v_proj", "out_proj"]
+print(f"Applying LoRA to Attention Modules: {TARGET_LORA_MODULES}")
+
+WINDOW_SIZE = 236
+STEP_SIZE = 1
+LOOKBACK = 64
+
+df_initial_pool = df.iloc[:WINDOW_SIZE].reset_index(drop=True)
+val_split_idx = int(len(df_initial_pool) * 0.8)
+
+df_opt_train = df_initial_pool.iloc[:val_split_idx].reset_index(drop=True)
+# Keep one full lookback of training history in validation. The old 80/20
+# split had only 48 validation rows, so its 64-bar dataset was always empty.
+df_opt_val = df_initial_pool.iloc[val_split_idx - LOOKBACK:].reset_index(drop=True)
+
+opt_train_ds = KronosNativeDataset(df_opt_train, tokenizer, S1_MAX_IDX, S2_MAX_IDX, lookback=LOOKBACK)
+opt_val_ds = KronosNativeDataset(df_opt_val, tokenizer, S1_MAX_IDX, S2_MAX_IDX, lookback=LOOKBACK)
+
+def objective(trial):
+    lr = trial.suggest_float("lr", 5e-5, 3e-4, log=True)
+    lora_r = trial.suggest_categorical("lora_r", [8, 16, 32])
+    batch_size = trial.suggest_categorical("batch_size", [4, 8])
+    epochs = trial.suggest_int("epochs", 2, 4)
+
+    t_loader = DataLoader(opt_train_ds, batch_size=batch_size, shuffle=True)
+    v_loader = DataLoader(opt_val_ds, batch_size=batch_size, shuffle=False)
+
+    trial_base = Kronos.from_pretrained(model_path)
+    trial_lora_cfg = LoraConfig(
+        r=lora_r,
+        lora_alpha=lora_r * 2,
+        lora_dropout=0.05,
+        bias="none",
+        target_modules=TARGET_LORA_MODULES
+    )
+    trial_model = get_peft_model(trial_base, trial_lora_cfg).to(device)
+
+    train_kronos_lora(trial_model, t_loader, epochs=epochs, lr=lr)
+
+    trial_model.eval()
+    criterion = nn.CrossEntropyLoss()
+    val_loss = 0.0
+    with torch.no_grad():
+        for batch in v_loader:
+            s1_ids = batch["s1_ids"].to(device)
+            s2_ids = batch["s2_ids"].to(device)
+            stamp = batch["stamp"].to(device)
+
+            out = trial_model(
+                s1_ids=s1_ids,
+                s2_ids=s2_ids,
+                stamp=stamp,
+                use_teacher_forcing=True,
+                s1_targets=s1_ids,
+            )
+            if isinstance(out, (tuple, list)):
+                s1_logits, s2_logits = out[0], out[1]
+            elif hasattr(out, "s1_logits") and hasattr(out, "s2_logits"):
+                s1_logits, s2_logits = out.s1_logits, out.s2_logits
+            else:
+                s1_logits, s2_logits = out, out
+
+            loss_s1 = criterion(
+                s1_logits[:, :-1, :].reshape(-1, s1_logits.size(-1)),
+                s1_ids[:, 1:].reshape(-1),
+            )
+            loss_s2 = criterion(
+                s2_logits[:, :-1, :].reshape(-1, s2_logits.size(-1)),
+                s2_ids[:, 1:].reshape(-1),
+            )
+            val_loss += (loss_s1 + loss_s2).item()
+
+    return val_loss / max(1, len(v_loader))
+
+print("\nRunning Optuna Hyperparameter Optimization on Initial Window (236 bars)...")
+study = optuna.create_study(direction="minimize")
+study.optimize(objective, n_trials=5)
+best_params = study.best_params
+print(f"Optuna Best Parameters: {best_params}\n")
+
+# ------------------------------------------------------------------
+# 5. Pre-Train on Initial Window (236 bars) & Start Walk-Forward Adaptation
+# ------------------------------------------------------------------
+base_model = Kronos.from_pretrained(model_path)
+lora_config = LoraConfig(
+    r=best_params["lora_r"],
+    lora_alpha=best_params["lora_r"] * 2,
+    lora_dropout=0.05,
+    bias="none",
+    target_modules=TARGET_LORA_MODULES
+)
+model = get_peft_model(base_model, lora_config).to(device)
+
+print(f"Pre-training on initial {WINDOW_SIZE}-day window...")
+initial_train_loader = DataLoader(
+    KronosNativeDataset(df_initial_pool, tokenizer, S1_MAX_IDX, S2_MAX_IDX, lookback=LOOKBACK),
+    batch_size=best_params["batch_size"],
+    shuffle=True
+)
+train_kronos_lora(model, initial_train_loader, epochs=best_params["epochs"], lr=best_params["lr"])
+
+adapter_dir = os.path.join(KRONOS_REPO_PATH, "best_nifty_lora_adapter")
+model.save_pretrained(adapter_dir)
+print(f"[SAVED] Fine-tuned LoRA adapter checkpoint saved to: {adapter_dir}")
+
+# ------------------------------------------------------------------
+# 6. Walk-Forward Sliding Window (Window=236, Step=1 Day)
+# ------------------------------------------------------------------
+print(f"\nExecuting Walk-Forward Simulation: Window={WINDOW_SIZE}, Step={STEP_SIZE} day...")
+pred_records = []
+
+for step_idx in range(WINDOW_SIZE, len(df), STEP_SIZE):
+    x_df = df.iloc[step_idx - LOOKBACK : step_idx][['open', 'high', 'low', 'close', 'volume', 'amount']]
+    x_ts = df['timestamps'].iloc[step_idx - LOOKBACK : step_idx]
+    y_ts = df['timestamps'].iloc[step_idx : step_idx + 1]
+
+    model.eval()
+    predictor = KronosPredictor(model, tokenizer, device=device, max_context=512)
+    pred_df = predictor.predict(
+        df=x_df, x_timestamp=x_ts, y_timestamp=y_ts, pred_len=1, verbose=False
+    )
+
+    act_open = df['open'].iloc[step_idx]
+    act_high = df['high'].iloc[step_idx]
+    act_low = df['low'].iloc[step_idx]
+    act_close = df['close'].iloc[step_idx]
+
+    pred_open = pred_df['open'].iloc[0]
+    pred_high = pred_df['high'].iloc[0]
+    pred_low = pred_df['low'].iloc[0]
+    pred_close = pred_df['close'].iloc[0]
+
+    act_ret = (act_close - act_open) / act_open
+    pred_ret = (pred_close - pred_open) / pred_open
+
+    pred_records.append({
+        'date': str(y_ts.iloc[0])[:10],
+        'act_open': act_open,
+        'act_high': act_high,
+        'act_low': act_low,
+        'act_close': act_close,
+        'pred_open': pred_open,
+        'pred_high': pred_high,
+        'pred_low': pred_low,
+        'pred_close': pred_close,
+        'act_ret': act_ret,
+        'pred_ret': pred_ret,
+        'act_dir': 1 if act_ret >= 0 else 0,
+        'pred_dir': 1 if pred_ret >= 0 else 0
+    })
+
+    window_start = step_idx + 1 - WINDOW_SIZE
+    window_end = step_idx + 1
+    sliding_train_df = df.iloc[window_start:window_end].reset_index(drop=True)
+
+    sliding_loader = DataLoader(
+        KronosNativeDataset(sliding_train_df, tokenizer, S1_MAX_IDX, S2_MAX_IDX, lookback=LOOKBACK),
+        batch_size=best_params["batch_size"],
+        shuffle=True
+    )
+    train_kronos_lora(model, sliding_loader, epochs=1, lr=best_params["lr"] * 0.2)
+
+eval_df = pd.DataFrame(pred_records)
+
+# ------------------------------------------------------------------
+# 7. Performance Metrics Calculation
+# ------------------------------------------------------------------
+def compute_comprehensive_metrics(df_eval):
+    act_ret = df_eval['act_ret'].values
+    pred_ret = df_eval['pred_ret'].values
+    act_close = df_eval['act_close'].values
+    pred_close = df_eval['pred_close'].values
+
+    mse = mean_squared_error(act_close, pred_close)
+    rmse = np.sqrt(mse)
+    mae = mean_absolute_error(act_close, pred_close)
+
+    nonzero = act_ret != 0
+    mape = (
+        np.mean(np.abs((act_ret[nonzero] - pred_ret[nonzero]) / act_ret[nonzero])) * 100
+        if np.any(nonzero) else np.nan
+    )
+    r2 = r2_score(act_close, pred_close) if len(act_close) > 1 else np.nan
+    dir_acc = np.mean(df_eval['act_dir'].values == df_eval['pred_dir'].values) * 100
+
+    strat_signals = np.where(df_eval['pred_dir'].values == 1, 1.0, -1.0)
+    cumulative_return = (np.prod(1 + strat_signals * act_ret) - 1) * 100
+    corr = (
+        pearsonr(act_ret, pred_ret)[0]
+        if len(act_ret) > 1 and np.std(act_ret) > 0 and np.std(pred_ret) > 0 else np.nan
+    )
+
+    return {
+        "MSE": mse, "RMSE": rmse, "MAE": mae, "MAPE": mape,
+        "R2": r2, "Direction_Accuracy": dir_acc,
+        "Cumulative_Return": cumulative_return, "Pearson_Corr": corr
+    }
+
+metrics = compute_comprehensive_metrics(eval_df)
+print(f"\n--- Walk-Forward Sliding Window (236-Day) Kronos Performance ---")
+print(f"Evaluated Test Days:   {len(eval_df)} (From {eval_df['date'].iloc[0]} to {eval_df['date'].iloc[-1]})")
+print(f"Directional Accuracy:  {metrics['Direction_Accuracy']:.2f}%")
+print(f"MSE:                   {metrics['MSE']:,.2f}")
+print(f"RMSE:                  {metrics['RMSE']:.2f}")
+print(f"MAE:                   INR {metrics['MAE']:.2f}")
+print(f"Cumulative Strategy:   {metrics['Cumulative_Return']:.2f}%")
+
+# ------------------------------------------------------------------
+# 8. Synchronized 4-Panel Plotly Dashboard
+# ------------------------------------------------------------------
+daily_variance_pct = ((eval_df['act_ret'].values - eval_df['pred_ret'].values) * 100) ** 2
+dates_cat = eval_df['date'].tolist()
+
+global_min = min(eval_df['act_low'].min(), eval_df['pred_low'].min())
+global_max = max(eval_df['act_high'].max(), eval_df['pred_high'].max())
+price_range = [global_min * 0.98, global_max * 1.02]
+
+fig = make_subplots(
+    rows=4, cols=1,
+    shared_xaxes=True,
+    vertical_spacing=0.04,
+    row_heights=[0.30, 0.30, 0.24, 0.16],
+    specs=[[{"type": "xy"}], [{"type": "xy"}], [{"type": "xy"}], [{"type": "table"}]],
+    subplot_titles=(
+        "<b>1. Actual NIFTY 50 Continuous OHLC Pattern (Y-Axis 1)</b>",
+        "<b>2. Real Kronos Predicted OHLC Candlesticks with Wicks (Y-Axis 2)</b>",
+        "<b>3. Daily Return Variance / Squared Error (%²) (Y-Axis 3)</b>",
+        "<b>4. Walk-Forward (Window=236, Step=1) Model Evaluation Summary</b>"
+    )
+)
+
+# Panel 1: Actual Candlestick
+fig.add_trace(go.Candlestick(
+    x=dates_cat,
+    open=eval_df['act_open'], high=eval_df['act_high'],
+    low=eval_df['act_low'], close=eval_df['act_close'],
+    name='Actual Price',
+    increasing_line_color='#26a69a', decreasing_line_color='#ef5350'
+), row=1, col=1)
+
+# Panel 2: Real Kronos Generated Candlesticks
+fig.add_trace(go.Candlestick(
+    x=dates_cat,
+    open=eval_df['pred_open'], high=eval_df['pred_high'],
+    low=eval_df['pred_low'], close=eval_df['pred_close'],
+    name='Kronos Predicted',
+    increasing_line_color='#42a5f5', decreasing_line_color='#ab47bc'
+), row=2, col=1)
+
+# Panel 3: Daily Error Variance
+fig.add_trace(go.Scatter(
+    x=dates_cat,
+    y=daily_variance_pct,
+    mode='lines+markers',
+    name='Daily Error Variance (%²)',
+    line=dict(color='#d32f2f', width=1.5),
+    marker=dict(size=3, color='#b71c1c')
+), row=3, col=1)
+
+# Panel 4: Metrics Summary Table Box
+fig.add_trace(go.Table(
+    header=dict(
+        values=["<b>RMSE</b>", "<b>MAE</b>", "<b>MAPE</b>", "<b>R² Score</b>", "<b>Pearson (r)</b>", "<b>Direction Acc.</b>", "<b>Strategy Return</b>"],
+        fill_color='#1565c0',
+        align='center',
+        font=dict(color='white', size=12)
+    ),
+    cells=dict(
+        values=[
+            [f"{metrics['RMSE']:.2f}"],
+            [f"INR {metrics['MAE']:.2f}"],
+            [f"{metrics['MAPE']:.2f}%"],
+            [f"{metrics['R2']:.4f}"],
+            [f"{metrics['Pearson_Corr']:.4f}"],
+            [f"{metrics['Direction_Accuracy']:.2f}%"],
+            [f"{metrics['Cumulative_Return']:.2f}%"]
+        ],
+        fill_color='#f0f4c3',
+        align='center',
+        font=dict(color='#1a237e', size=12)
+    )
+), row=4, col=1)
+
+fig.update_layout(
+    title=dict(text=f"<b>Fine-Tuned Kronos Foundation Model (Sliding Window={WINDOW_SIZE}, Step={STEP_SIZE}d)</b>", font=dict(size=18)),
+    height=1100,
+    margin=dict(t=80, b=40, l=60, r=40),
+    template="plotly_white",
+    xaxis_rangeslider_visible=False,
+    xaxis2_rangeslider_visible=False,
+    yaxis_title="Price (₹)",
+    yaxis2_title="Price (₹)",
+    yaxis3_title="Variance (%²)",
+    legend=dict(orientation="h", yanchor="bottom", y=1.01, xanchor="right", x=1)
+)
+
+fig.update_xaxes(type='category')
+fig.update_yaxes(range=price_range, row=1, col=1)
+fig.update_yaxes(range=price_range, row=2, col=1)
+fig.update_yaxes(autorange=True, row=3, col=1)
+
+fig.show()

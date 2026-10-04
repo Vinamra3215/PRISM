@@ -1,0 +1,18 @@
+{
+    "Predictions": 1041,
+    "RMSE": 1.884346682069191,
+    "MAE": 1.3941850539489937,
+    "MAPE": 337.49965091304574,
+    "R2": -0.959503512692266,
+    "Direction Accuracy": 50.57692307692307,
+    "Actual Return": 51.78400257732532,
+    "Predicted Return": 55.186873016167716,
+    "Pearson Correlation": -0.028745800690410994,
+    "Company": "MARUTI",
+    "Lookback": 118,
+    "Forecast Horizon": 1,
+    "Epochs": 25,
+    "LoRA Rank": 8,
+    "LoRA Alpha": 16,
+    "LoRA Dropout": 0.05
+}

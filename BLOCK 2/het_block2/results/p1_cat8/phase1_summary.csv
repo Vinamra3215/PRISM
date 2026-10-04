@@ -1,0 +1,10 @@
+metric,value
+category,Category 8 - Derived & Interaction
+total_features,10
+selection_start,2022-01-01
+selection_end,2023-12-31
+correlation_threshold,0.7
+target_features,7
+selected_features,7
+rankic_method,Daily cross-sectional Spearman correlation between feature and next-day return
+selection_method,Rank features by absolute ICIR; remove |correlation| > 0.70 using lower absolute ICIR; retain top 7

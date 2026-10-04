@@ -1,0 +1,32 @@
+{
+    "company": "BEL_OHLCV",
+    "model": "Kronos Base",
+    "experiment": "Zero-Shot Baseline",
+    "fine_tuning": false,
+    "lora": false,
+    "window_size": 118,
+    "prediction_length": 1,
+    "prediction_method": "118 actual previous trading days -> next actual trading day",
+    "uses_predicted_values_as_input": false,
+    "optuna": true,
+    "optuna_best_parameters": {
+        "T": 0.6145518104509917,
+        "top_p": 0.9429352150471993
+    },
+    "metrics": {
+        "RMSE_decimal": 0.0263634259404618,
+        "MAE_decimal": 0.019149810191247545,
+        "MAPE_decimal": 3.7722938940607937,
+        "RMSE_percent": 2.63634259404618,
+        "MAE_percent": 1.9149810191247545,
+        "MAPE_percent": 377.22938940607935,
+        "R2": -0.8446471992533955,
+        "Direction_Accuracy_percent": 50.91258405379443,
+        "Actual_Return_percent": 435.94096563322563,
+        "Predicted_Return_percent": -84.03047375768797,
+        "Pearson_Correlation": 0.03446607122216237,
+        "Number_of_predictions": 1041,
+        "First_prediction_date": "2022-06-24",
+        "Last_prediction_date": "2026-09-04"
+    }
+}

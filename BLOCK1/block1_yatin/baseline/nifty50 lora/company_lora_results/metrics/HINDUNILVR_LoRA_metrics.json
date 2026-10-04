@@ -1,0 +1,18 @@
+{
+    "Predictions": 1041,
+    "RMSE": 1.575539976219369,
+    "MAE": 1.176710395373464,
+    "MAPE": 396.24825914399554,
+    "R2": -0.5974788458443943,
+    "Direction Accuracy": 51.34615384615384,
+    "Actual Return": -14.34523598848505,
+    "Predicted Return": -14.654049148575565,
+    "Pearson Correlation": 0.06495295189029994,
+    "Company": "HINDUNILVR",
+    "Lookback": 118,
+    "Forecast Horizon": 1,
+    "Epochs": 25,
+    "LoRA Rank": 8,
+    "LoRA Alpha": 16,
+    "LoRA Dropout": 0.05
+}

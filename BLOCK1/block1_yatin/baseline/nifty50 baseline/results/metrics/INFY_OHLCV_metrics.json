@@ -1,0 +1,32 @@
+{
+    "company": "INFY_OHLCV",
+    "model": "Kronos Base",
+    "experiment": "Zero-Shot Baseline",
+    "fine_tuning": false,
+    "lora": false,
+    "window_size": 118,
+    "prediction_length": 1,
+    "prediction_method": "118 actual previous trading days -> next actual trading day",
+    "uses_predicted_values_as_input": false,
+    "optuna": true,
+    "optuna_best_parameters": {
+        "T": 0.5166342276862007,
+        "top_p": 0.5036854031588495
+    },
+    "metrics": {
+        "RMSE_decimal": 0.020245693083642373,
+        "MAE_decimal": 0.01463125418812655,
+        "MAPE_decimal": 3.5980455306208716,
+        "RMSE_percent": 2.0245693083642373,
+        "MAE_percent": 1.463125418812655,
+        "MAPE_percent": 359.80455306208717,
+        "R2": -0.5711735442657366,
+        "Direction_Accuracy_percent": 51.29682997118156,
+        "Actual_Return_percent": -22.200417364585622,
+        "Predicted_Return_percent": 2929.402985075057,
+        "Pearson_Correlation": -0.002891249843021673,
+        "Number_of_predictions": 1041,
+        "First_prediction_date": "2022-06-24",
+        "Last_prediction_date": "2026-09-04"
+    }
+}

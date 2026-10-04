@@ -1,0 +1,8 @@
+feature,RankIC,ICIR,observations,selection_rank
+nifty50_daily_return,0.1214350265396541,,492,1
+nifty_pharma_return,0.09586196216002224,,492,2
+nifty_it_return,0.05967746957227321,,492,3
+nifty50_return_5d,0.05120408092038377,,488,4
+india_vix_change,-0.04869843740322017,,490,5
+nifty50_rolling_vol_20d,-0.04692337070731767,,473,6
+usdinr_daily_return,-0.036762552139470245,,492,7

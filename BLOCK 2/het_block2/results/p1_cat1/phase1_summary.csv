@@ -1,0 +1,8 @@
+metric,value
+Total Category 1 features,12
+Features with valid ICIR,12
+Target selected features,7
+Final selected features,7
+Selection start,2022-01-01
+Selection end,2023-12-31
+Correlation threshold,0.7

@@ -1,0 +1,18 @@
+{
+    "Predictions": 1041,
+    "RMSE": 1.6762806479833956,
+    "MAE": 1.2666233845951052,
+    "MAPE": 420.0200474928397,
+    "R2": -0.6362326912191043,
+    "Direction Accuracy": 49.23076923076923,
+    "Actual Return": 33.53752738396165,
+    "Predicted Return": 33.30971038448827,
+    "Pearson Correlation": -0.0009237823611199956,
+    "Company": "DRREDDY",
+    "Lookback": 118,
+    "Forecast Horizon": 1,
+    "Epochs": 25,
+    "LoRA Rank": 8,
+    "LoRA Alpha": 16,
+    "LoRA Dropout": 0.05
+}

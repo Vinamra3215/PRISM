@@ -1,0 +1,32 @@
+{
+    "company": "ADANIPORTS_OHLCV",
+    "model": "Kronos Base",
+    "experiment": "Zero-Shot Baseline",
+    "fine_tuning": false,
+    "lora": false,
+    "window_size": 118,
+    "prediction_length": 1,
+    "prediction_method": "118 actual previous trading days -> next actual trading day",
+    "uses_predicted_values_as_input": false,
+    "optuna": true,
+    "optuna_best_parameters": {
+        "T": 1.0308158902596767,
+        "top_p": 0.684187347569714
+    },
+    "metrics": {
+        "RMSE_decimal": 0.0292357010348326,
+        "MAE_decimal": 0.019308482126508705,
+        "MAPE_decimal": 5.482683723990311,
+        "RMSE_percent": 2.92357010348326,
+        "MAE_percent": 1.9308482126508704,
+        "MAPE_percent": 548.2683723990311,
+        "R2": -0.6109440307148764,
+        "Direction_Accuracy_percent": 51.29682997118156,
+        "Actual_Return_percent": 152.82098025915323,
+        "Predicted_Return_percent": 80.95456925551872,
+        "Pearson_Correlation": 0.058882893654028545,
+        "Number_of_predictions": 1041,
+        "First_prediction_date": "2022-06-24",
+        "Last_prediction_date": "2026-09-04"
+    }
+}

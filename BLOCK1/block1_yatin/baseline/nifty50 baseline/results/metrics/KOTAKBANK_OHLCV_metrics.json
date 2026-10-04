@@ -1,0 +1,32 @@
+{
+    "company": "KOTAKBANK_OHLCV",
+    "model": "Kronos Base",
+    "experiment": "Zero-Shot Baseline",
+    "fine_tuning": false,
+    "lora": false,
+    "window_size": 118,
+    "prediction_length": 1,
+    "prediction_method": "118 actual previous trading days -> next actual trading day",
+    "uses_predicted_values_as_input": false,
+    "optuna": true,
+    "optuna_best_parameters": {
+        "T": 1.095778161722066,
+        "top_p": 0.5720893474167276
+    },
+    "metrics": {
+        "RMSE_decimal": 0.016957481623620072,
+        "MAE_decimal": 0.012345315230339443,
+        "MAPE_decimal": 3.0609261540548323,
+        "RMSE_percent": 1.6957481623620072,
+        "MAE_percent": 1.2345315230339442,
+        "MAPE_percent": 306.09261540548323,
+        "R2": -0.5753123091438761,
+        "Direction_Accuracy_percent": 50.24015369836695,
+        "Actual_Return_percent": 26.03170559027477,
+        "Predicted_Return_percent": 1234.2501717915486,
+        "Pearson_Correlation": 0.05905304021063267,
+        "Number_of_predictions": 1041,
+        "First_prediction_date": "2022-06-24",
+        "Last_prediction_date": "2026-09-04"
+    }
+}

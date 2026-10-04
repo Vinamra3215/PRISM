@@ -1,0 +1,2 @@
+best_iteration,validation_rmse,validation_mae,validation_spearman_ic,train_rows,validation_rows,num_features
+4,0.015740598886908756,0.010343012299462528,0.024482215732978926,12152,12094,35

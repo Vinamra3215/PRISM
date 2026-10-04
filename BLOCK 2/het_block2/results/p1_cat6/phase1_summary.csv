@@ -1,0 +1,11 @@
+metric,value
+category,Category 6 - Market-Level
+total_features,12
+selection_start,2022-01-01
+selection_end,2023-12-31
+correlation_threshold,0.7
+target_selected,7
+selected_count,7
+selection_method,Time-series Spearman association with next-day NIFTY 50 return
+rankic_definition,Spearman correlation over the Jan 2022-Dec 2023 daily observations
+icir_definition,Not defined in the conventional cross-sectional daily RankIC framework

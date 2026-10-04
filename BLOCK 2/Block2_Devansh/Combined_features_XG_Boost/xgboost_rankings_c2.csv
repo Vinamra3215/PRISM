@@ -1,0 +1,33 @@
+Feature,XGB_Gain,XGB_Rank
+Return 10-day,0.073561825,1
+trend_strength,0.064286076,2
+volatility_ratio_20d_60d,0.053721547,3
+rolling_volatility_10d,0.03177033,4
+Sector Relative Return,0.021235824,5
+Cross Sectional Return Z score,0.020406453,6
+atr_14d,0.013126487,7
+Intraday Range,0.012626134,8
+rolling_skewness_20d,0.00936419,9
+vol_weight_mom,0.008603744,10
+Return 20-day,0.008579862,11
+rsi_vol_diverg,0.007866504,12
+keltner_channel_position,0.005100318,13
+macd_signal,0.0038788468,14
+Volume Ratio 5-day,0.0035808864,15
+Return 5-day,0.0001724497,16
+Volume Ratio 20-day,0.0,17
+rsi_14,0.0,18
+macd_hist,0.0,19
+rolling_kurtosis_20d,0.0,20
+Open-Close Spread,0.0,21
+volatility_ratio_5d_20d,0.0,22
+MFI,0.0,23
+VWAP Deviation,0.0,24
+consecutive_down_days,0.0,25
+candle_direction,0.0,26
+upper_shadow_ratio,0.0,27
+Volume-Price Trend (VPT),0.0,28
+Volume Momentum,0.0,29
+Return Rank Percentile (20-day),0.0,30
+breakout_signal,0.0,31
+mean_reversion,0.0,32

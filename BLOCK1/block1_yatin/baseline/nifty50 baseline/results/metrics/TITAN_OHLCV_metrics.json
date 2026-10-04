@@ -1,0 +1,32 @@
+{
+    "company": "TITAN_OHLCV",
+    "model": "Kronos Base",
+    "experiment": "Zero-Shot Baseline",
+    "fine_tuning": false,
+    "lora": false,
+    "window_size": 118,
+    "prediction_length": 1,
+    "prediction_method": "118 actual previous trading days -> next actual trading day",
+    "uses_predicted_values_as_input": false,
+    "optuna": true,
+    "optuna_best_parameters": {
+        "T": 0.8512500724952696,
+        "top_p": 0.7338826159912171
+    },
+    "metrics": {
+        "RMSE_decimal": 0.01699276392232093,
+        "MAE_decimal": 0.013050964723680716,
+        "MAPE_decimal": 4.684386222615729,
+        "RMSE_percent": 1.6992763922320928,
+        "MAE_percent": 1.3050964723680716,
+        "MAPE_percent": 468.43862226157296,
+        "R2": -0.5259249516273905,
+        "Direction_Accuracy_percent": 49.66378482228626,
+        "Actual_Return_percent": 145.90966689347846,
+        "Predicted_Return_percent": -20.02192966386136,
+        "Pearson_Correlation": 0.02858559366210568,
+        "Number_of_predictions": 1041,
+        "First_prediction_date": "2022-06-24",
+        "Last_prediction_date": "2026-09-04"
+    }
+}

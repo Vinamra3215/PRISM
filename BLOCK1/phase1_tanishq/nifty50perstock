@@ -1,0 +1,539 @@
+import os
+import sys
+import gc
+import time
+import glob
+import json
+import warnings
+import numpy as np
+import pandas as pd
+from pathlib import Path
+from scipy.stats import spearmanr
+
+import torch
+import torch.nn as nn
+import torch.multiprocessing as mp
+import optuna
+
+# Prevent Hugging Face remote check hangs
+os.environ["HF_HUB_OFFLINE"] = "1"
+os.environ["TRANSFORMERS_OFFLINE"] = "1"
+
+# Local Kronos repository and weights
+sys.path.append("/home/soq/Kronos")
+from model.kronos import Kronos, KronosTokenizer, KronosPredictor
+from peft import LoraConfig, get_peft_model
+
+warnings.filterwarnings("ignore")
+optuna.logging.set_verbosity(optuna.logging.WARNING)
+
+# ---------------------------------------------------------------------------
+# Directories & Parameters
+# ---------------------------------------------------------------------------
+DATA_DIR = "/home/soq/1min based data of nifty50"
+BASE_DIR = "/home/soq/__shutupandbendover/tanishq"
+OUTPUT_DIR = os.path.join(BASE_DIR, "factor_run_results_v5")
+PRED_DIR = os.path.join(OUTPUT_DIR, "predictions_v5")
+OPTUNA_DIR = os.path.join(OUTPUT_DIR, "optuna_configs_v5")
+
+MODEL_PATH = "/home/soq/__shutupandbendover/het-uchiha/weights/Kronos-base"
+TOK_PATH = "/home/soq/__shutupandbendover/het-uchiha/weights/Kronos-Tokenizer-base"
+
+NUM_WORKERS = 2               # 2 workers: balanced VRAM footprint on RTX A5000 (24GB)
+CONTEXT_LEN = 236             # Lookback window (~1 trading year)
+WALK_START_DATE = "2024-01-01"
+
+OPT_TRAIN_START = "2022-01-01"
+OPT_TRAIN_END   = "2023-01-01"
+OPT_VAL_START   = "2023-01-01"
+OPT_VAL_END     = "2024-01-01"
+N_OPTUNA_TRIALS = 10
+
+MAX_FT_EPOCHS = 3
+
+os.makedirs(PRED_DIR, exist_ok=True)
+os.makedirs(OPTUNA_DIR, exist_ok=True)
+
+# ---------------------------------------------------------------------------
+# 6D OHLCV Preprocessing & Resampling
+# ---------------------------------------------------------------------------
+def load_and_preprocess_stock(file_path):
+    df = pd.read_parquet(file_path)
+
+    if isinstance(df.index, pd.DatetimeIndex):
+        df = df.reset_index()
+
+    col_map = {str(c).lower().strip(): c for c in df.columns}
+    d_col = next((col_map[c] for c in ["date", "timestamp", "datetime", "time"] if c in col_map), None)
+    o_col = next((col_map[c] for c in ["open", "open price"] if c in col_map), None)
+    h_col = next((col_map[c] for c in ["high", "high price"] if c in col_map), None)
+    l_col = next((col_map[c] for c in ["low", "low price"] if c in col_map), None)
+    c_col = next((col_map[c] for c in ["close", "close price", "adj close", "close_price", "ltp", "last price"] if c in col_map), None)
+    v_col = next((col_map[c] for c in ["volume", "vol", "traded_qty", "qty", "shares_traded"] if c in col_map), None)
+
+    if None in (d_col, o_col, h_col, l_col, c_col):
+        raise ValueError(f"Essential price columns missing in {file_path}.")
+
+    dt_series = pd.to_datetime(df[d_col])
+    if dt_series.dt.tz is not None:
+        dt_series = dt_series.dt.tz_localize(None)
+    df["date"] = dt_series
+
+    if v_col is None:
+        df["volume"] = 1.0
+        v_col = "volume"
+
+    df = df.sort_values("date").dropna(subset=[o_col, h_col, l_col, c_col])
+
+    # Resample intraday 1-min to daily OHLCV
+    if df["date"].dt.time.nunique() > 1:
+        daily_df = df.set_index("date").resample("1D").agg({
+            o_col: "first",
+            h_col: "max",
+            l_col: "min",
+            c_col: "last",
+            v_col: "sum"
+        }).dropna().reset_index()
+    else:
+        daily_df = df[["date", o_col, h_col, l_col, c_col, v_col]].copy()
+
+    daily_df.columns = ["date", "open", "high", "low", "close", "volume"]
+    daily_df["volume"] = daily_df["volume"].clip(lower=1.0)
+    daily_df["amount"] = daily_df["volume"] * daily_df[["open", "high", "low", "close"]].mean(axis=1)
+    daily_df = daily_df.sort_values("date").reset_index(drop=True)
+
+    # Front-pad history if stock starts after OPT_TRAIN_START
+    earliest_req = pd.to_datetime(OPT_TRAIN_START)
+    if daily_df["date"].iloc[0] > earliest_req:
+        pad_dates = pd.date_range(start=earliest_req, end=daily_df["date"].iloc[0] - pd.Timedelta(days=1), freq="B")
+        first_row = daily_df.iloc[0]
+        pad_df = pd.DataFrame({
+            "date": pad_dates,
+            "open": [first_row["open"]] * len(pad_dates),
+            "high": [first_row["high"]] * len(pad_dates),
+            "low": [first_row["low"]] * len(pad_dates),
+            "close": [first_row["close"]] * len(pad_dates),
+            "volume": [first_row["volume"]] * len(pad_dates),
+            "amount": [first_row["amount"]] * len(pad_dates),
+        })
+        daily_df = pd.concat([pad_df, daily_df], ignore_index=True)
+
+    return daily_df
+
+# ---------------------------------------------------------------------------
+# Helper: LoRA Model Construction
+# ---------------------------------------------------------------------------
+def build_kronos_lora(device, r=8, alpha=16, dropout=0.05):
+    base_model = Kronos.from_pretrained(MODEL_PATH)
+    lora_config = LoraConfig(
+        r=r,
+        lora_alpha=alpha,
+        target_modules=["q_proj", "v_proj"],
+        lora_dropout=dropout,
+        bias="none",
+    )
+    lora_model = get_peft_model(base_model, lora_config)
+    lora_model = lora_model.to(device)
+    return lora_model
+
+# ---------------------------------------------------------------------------
+# Corrected Loss Function: 6D Normalized Tensor -> Tokenizer -> Unpack (s1, s2)
+# ---------------------------------------------------------------------------
+def compute_token_loss(model, tokenizer, df_slice, device):
+    feat_cols = ["open", "high", "low", "close", "volume", "amount"]
+    arr = df_slice[feat_cols].values.astype(np.float32)
+
+    mean = np.mean(arr, axis=0)
+    std = np.std(arr, axis=0)
+    norm_arr = (arr - mean) / (std + 1e-5)
+    norm_arr = np.clip(norm_arr, -5.0, 5.0)
+
+    # Convert 2D slice to 3D Tensor: [batch_size=1, seq_len, num_features=6]
+    tensor_6d = torch.tensor(norm_arr, dtype=torch.float32).unsqueeze(0).to(device)
+    z_indices = tokenizer.encode(tensor_6d)
+
+    # Hierarchical 20-bit unpack into (s1, s2)
+    mask = (1 << tokenizer.s2_bits) - 1
+    s1_ids = (z_indices >> tokenizer.s2_bits).long()
+    s2_ids = (z_indices & mask).long()
+
+    inp_s1 = s1_ids[:, :-1]
+    inp_s2 = s2_ids[:, :-1]
+    tgt_s1 = s1_ids[:, 1:]
+    tgt_s2 = s2_ids[:, 1:]
+
+    logits_tuple = model(inp_s1, inp_s2, use_teacher_forcing=True, s1_targets=tgt_s1)
+    l1 = logits_tuple[0]
+    l2 = logits_tuple[1]
+
+    loss_s1 = nn.functional.cross_entropy(l1.reshape(-1, l1.size(-1)), tgt_s1.reshape(-1))
+    loss_s2 = nn.functional.cross_entropy(l2.reshape(-1, l2.size(-1)), tgt_s2.reshape(-1))
+    return loss_s1 + loss_s2
+
+# ---------------------------------------------------------------------------
+# Stage 1: Stock-Specific Optuna Tuning
+# ---------------------------------------------------------------------------
+def tune_stock_hyperparameters(df, ticker, device, tokenizer):
+    cfg_file = os.path.join(OPTUNA_DIR, f"{ticker}_best_hparams.json")
+    if os.path.exists(cfg_file):
+        with open(cfg_file, "r") as f:
+            return json.load(f)
+
+    t_mask = (df["date"] >= OPT_TRAIN_START) & (df["date"] < OPT_TRAIN_END)
+    v_mask = (df["date"] >= OPT_VAL_START) & (df["date"] < OPT_VAL_END)
+
+    train_df = df[t_mask].reset_index(drop=True)
+    val_df = df[v_mask].reset_index(drop=True)
+
+    if len(train_df) < 50 or len(val_df) < 20:
+        return {"lora_r": 8, "lora_alpha": 16, "lr": 1e-4}
+
+    def objective(trial):
+        r = trial.suggest_categorical("lora_r", [4, 8, 16])
+        alpha = trial.suggest_categorical("lora_alpha", [8, 16, 32])
+        lr = trial.suggest_float("lr", 1e-5, 3e-4, log=True)
+
+        model = build_kronos_lora(device, r=r, alpha=alpha)
+        optimizer = torch.optim.AdamW(filter(lambda p: p.requires_grad, model.parameters()), lr=lr)
+
+        model.train()
+        for _ in range(3):
+            optimizer.zero_grad()
+            loss = compute_token_loss(model, tokenizer, train_df, device)
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+            optimizer.step()
+
+        model.eval()
+        with torch.no_grad():
+            val_loss = compute_token_loss(model, tokenizer, val_df, device).item()
+
+        del model, optimizer
+        gc.collect()
+        torch.cuda.empty_cache()
+        return val_loss
+
+    study = optuna.create_study(direction="minimize")
+    study.optimize(objective, n_trials=N_OPTUNA_TRIALS, timeout=300)
+    best_params = study.best_params
+
+    with open(cfg_file, "w") as f:
+        json.dump(best_params, f, indent=2)
+
+    return best_params
+
+# ---------------------------------------------------------------------------
+# Stage 2: Parallel Worker Loop (Daily Sliding Window Inference)
+# ---------------------------------------------------------------------------
+def run_worker(rank, gpu_id, file_chunk):
+    device = torch.device(f"cuda:{gpu_id}" if torch.cuda.is_available() else "cpu")
+    print(f"[Worker {rank}] Running on GPU {gpu_id} with {len(file_chunk)} stocks.")
+
+    tokenizer = KronosTokenizer.from_pretrained(TOK_PATH).to(device)
+
+    for file_path in file_chunk:
+        stem = Path(file_path).stem
+        ticker = (
+            stem.replace("-EQ_1min", "")
+                .replace("-EQ_1MIN", "")
+                .replace("-selected-columns", "")
+        )
+        save_file = os.path.join(PRED_DIR, f"{ticker}_pred.parquet")
+
+        if os.path.exists(save_file):
+            print(f"[Worker {rank}] {ticker} already processed. Skipping.")
+            continue
+
+        print(f"\n[Worker {rank}] Starting Pipeline for {ticker}...")
+
+        try:
+            df = load_and_preprocess_stock(file_path)
+
+            print(f"[Worker {rank}] Tuning LoRA hyperparameters for {ticker}...")
+            best_cfg = tune_stock_hyperparameters(df, ticker, device, tokenizer)
+            print(f"[Worker {rank}] {ticker} Optimal Hyperparameters: {best_cfg}")
+
+            test_mask = df["date"] >= pd.to_datetime(WALK_START_DATE)
+            test_indices = df.index[test_mask].tolist()
+
+            if not test_indices:
+                print(f"[Worker {rank}] {ticker} has no data in test period. Skipping.")
+                continue
+
+            start_step = test_indices[0]
+            dates = []
+            act_o, act_h, act_l, act_c, act_v = [], [], [], [], []
+            pred_o, pred_h, pred_l, pred_c, pred_v = [], [], [], [], []
+
+            r_val = best_cfg.get("lora_r", 8)
+            alpha_val = best_cfg.get("lora_alpha", 16)
+            lr_val = best_cfg.get("lr", 1e-4)
+
+            model = build_kronos_lora(device, r=r_val, alpha=alpha_val)
+            optimizer = torch.optim.AdamW(filter(lambda p: p.requires_grad, model.parameters()), lr=lr_val)
+            predictor = KronosPredictor(model, tokenizer, device=str(device), max_context=512)
+
+            for step in range(start_step, len(df)):
+                target_date = df["date"].iloc[step]
+                target_row = df.iloc[step]
+
+                x_df = df[["open", "high", "low", "close", "volume", "amount"]].iloc[step - CONTEXT_LEN : step].copy().reset_index(drop=True)
+                x_ts = df["date"].iloc[step - CONTEXT_LEN : step].reset_index(drop=True)
+                y_ts = pd.Series([target_date]).reset_index(drop=True)
+
+                # Daily fine-tuning on lookback window
+                model.train()
+                for _ in range(MAX_FT_EPOCHS):
+                    optimizer.zero_grad()
+                    loss = compute_token_loss(model, tokenizer, x_df, device)
+                    loss.backward()
+                    torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+                    optimizer.step()
+
+                # 1-day ahead inference
+                model.eval()
+                with torch.no_grad():
+                    pred_df = predictor.predict(
+                        df=x_df,
+                        x_timestamp=x_ts,
+                        y_timestamp=y_ts,
+                        pred_len=1,
+                        T=1.0,
+                        top_p=0.9,
+                        sample_count=1,
+                        verbose=False
+                    )
+
+                po = float(pred_df["open"].iloc[0])
+                ph = float(pred_df["high"].iloc[0])
+                pl = float(pred_df["low"].iloc[0])
+                pc = float(pred_df["close"].iloc[0])
+                pv = float(pred_df["volume"].iloc[0]) if "volume" in pred_df.columns else 1.0
+
+                ph_corr = max(ph, po, pc)
+                pl_corr = min(pl, po, pc)
+
+                dates.append(target_date)
+                act_o.append(float(target_row["open"]))
+                act_h.append(float(target_row["high"]))
+                act_l.append(float(target_row["low"]))
+                act_c.append(float(target_row["close"]))
+                act_v.append(float(target_row["volume"]))
+
+                pred_o.append(po)
+                pred_h.append(ph_corr)
+                pred_l.append(pl_corr)
+                pred_c.append(pc)
+                pred_v.append(max(0.0, pv))
+
+            res_df = pd.DataFrame({
+                "date": dates,
+                "actual_open": act_o,
+                "actual_high": act_h,
+                "actual_low": act_l,
+                "actual_close": act_c,
+                "actual_volume": act_v,
+                "pred_open": pred_o,
+                "pred_high": pred_h,
+                "pred_low": pred_l,
+                "pred_close": pred_c,
+                "pred_volume": pred_v,
+            })
+            res_df.to_parquet(save_file, index=False)
+            print(f"[Worker {rank}] Saved {ticker} ({len(res_df)} predictions) -> {save_file}")
+
+            del model, optimizer, predictor
+            gc.collect()
+            torch.cuda.empty_cache()
+
+        except Exception as e:
+            print(f"[Worker {rank}] Failed on {ticker}: {str(e)}")
+
+# ---------------------------------------------------------------------------
+# Cross-Sectional Factor Evaluation Engine (50-Stock Universe)
+# ---------------------------------------------------------------------------
+def compute_true_cross_sectional_factor_metrics(pred_dir, output_dir):
+    pred_files = glob.glob(os.path.join(pred_dir, "*_pred.parquet"))
+    if not pred_files:
+        print("No prediction files found to evaluate.")
+        return
+
+    print(f"\n[Factor Engine] Aggregating {len(pred_files)} stocks into Date x Ticker matrices...")
+
+    act_dict = {}
+    pred_dict = {}
+    per_stock_records = []
+
+    for pf in pred_files:
+        ticker = Path(pf).name.replace("_pred.parquet", "")
+        df = pd.read_parquet(pf)
+        df["date"] = pd.to_datetime(df["date"])
+        df = df.sort_values("date").drop_duplicates("date").set_index("date")
+
+        act = df["actual_close"].astype(float)
+        pred = df["pred_close"].astype(float)
+
+        act_ret = act.pct_change()
+        pred_ret = (pred - act.shift(1)) / act.shift(1)
+
+        act_dict[ticker] = act_ret
+        pred_dict[ticker] = pred_ret
+
+        c_act = act.dropna()
+        c_pred = pred.dropna()
+        rmse = float(np.sqrt(np.mean((c_act - c_pred) ** 2)))
+        mae = float(np.mean(np.abs(c_act - c_pred)))
+        valid = act_ret.dropna().index.intersection(pred_ret.dropna().index)
+        hit = float(np.mean(np.sign(act_ret[valid]) == np.sign(pred_ret[valid])) * 100.0) if len(valid) > 0 else 0.0
+
+        per_stock_records.append({
+            "Ticker": ticker,
+            "RMSE": round(rmse, 4),
+            "MAE": round(mae, 4),
+            "Directional_Hit_Rate_%": round(hit, 2)
+        })
+
+    df_act_ret = pd.DataFrame(act_dict)
+    df_pred_ret = pd.DataFrame(pred_dict)
+    common_dates = df_act_ret.index.intersection(df_pred_ret.index).sort_values()
+
+    daily_factor_records = []
+
+    for dt in common_dates:
+        a_row = df_act_ret.loc[dt].dropna()
+        p_row = df_pred_ret.loc[dt].dropna()
+
+        universe = a_row.index.intersection(p_row.index)
+        if len(universe) < 5:
+            continue
+
+        a_vals = a_row[universe].to_numpy()
+        p_vals = p_row[universe].to_numpy()
+
+        ic, _ = spearmanr(p_vals, a_vals)
+        if np.isnan(ic):
+            ic = 0.0
+
+        q80 = np.percentile(p_vals, 80)
+        q20 = np.percentile(p_vals, 20)
+        top_ret = float(np.mean(a_vals[p_vals >= q80]))
+        bot_ret = float(np.mean(a_vals[p_vals <= q20]))
+        ls_spread = top_ret - bot_ret
+
+        med_p = np.median(p_vals)
+        med_a = np.median(a_vals)
+        cross_hit = float(np.mean((p_vals >= med_p) == (a_vals >= med_a)) * 100.0)
+
+        daily_factor_records.append({
+            "Date": dt,
+            "Universe_Size": len(universe),
+            "Daily_Rank_IC": ic,
+            "Long_Short_Spread": ls_spread,
+            "Top_Quantile_Return": top_ret,
+            "Bottom_Quantile_Return": bot_ret,
+            "Cross_Hit_Rate": cross_hit
+        })
+
+    if not daily_factor_records:
+        print("[Factor Engine] Not enough overlapping trading days across stocks.")
+        return
+
+    panel_df = pd.DataFrame(daily_factor_records).set_index("Date")
+    panel_df["Cumulative_Rank_IC"] = panel_df["Daily_Rank_IC"].cumsum()
+    panel_df["Cumulative_LS_Spread"] = (1.0 + panel_df["Long_Short_Spread"]).cumprod()
+
+    daily_csv = os.path.join(output_dir, "daily_cross_sectional_factor_series.csv")
+    daily_txt = os.path.join(output_dir, "daily_cross_sectional_factor_series.txt")
+    per_stock_csv = os.path.join(output_dir, "per_stock_tracking_metrics.csv")
+    per_stock_txt = os.path.join(output_dir, "per_stock_tracking_metrics.txt")
+    summary_txt = os.path.join(output_dir, "cross_sectional_universe_metrics.txt")
+
+    panel_df.to_csv(daily_csv)
+    df_per_stock = pd.DataFrame(per_stock_records).sort_values("Ticker")
+    df_per_stock.to_csv(per_stock_csv, index=False)
+
+    with open(daily_txt, "w") as f:
+        f.write(panel_df.reset_index().to_string(index=False))
+
+    with open(per_stock_txt, "w") as f:
+        f.write(df_per_stock.to_string(index=False))
+
+    mean_ic = float(panel_df["Daily_Rank_IC"].mean())
+    std_ic = float(panel_df["Daily_Rank_IC"].std())
+    icir = float((mean_ic / (std_ic + 1e-8)) * np.sqrt(252))
+    ann_ls = float(panel_df["Long_Short_Spread"].mean() * 252 * 100)
+    ann_top_q = float(panel_df["Top_Quantile_Return"].mean() * 252 * 100)
+    ann_bot_q = float(panel_df["Bottom_Quantile_Return"].mean() * 252 * 100)
+    avg_hit = float(panel_df["Cross_Hit_Rate"].mean())
+
+    summary_content = f"""======================================================================
+TRUE CROSS-SECTIONAL FACTOR METRICS (50-STOCK NIFTY UNIVERSE)
+Period: {panel_df.index[0].date()} to {panel_df.index[-1].date()} | Total Trading Days: {len(panel_df)}
+======================================================================
+Universe Factor Rank IC (Mean):          {mean_ic:.5f}
+Universe Factor ICIR (Annualized):       {icir:.2f}
+Total Cumulative Rank IC:                {panel_df['Cumulative_Rank_IC'].iloc[-1]:.4f}
+
+Annualized Long/Short Spread (Q5 - Q1):  {ann_ls:.2f}%
+Annualized Top Quantile Return (Q5):     {ann_top_q:.2f}%
+Annualized Bottom Quantile Return (Q1):  {ann_bot_q:.2f}%
+
+Cross-Sectional Selection Hit Rate:      {avg_hit:.2f}%
+======================================================================
+Outputs Written:
+1. Daily Cross-Sectional Factors: {daily_csv} (and .txt)
+2. Per-Stock Tracking Metrics:    {per_stock_csv} (and .txt)
+3. Text Summary Table:            {summary_txt}
+======================================================================
+"""
+    with open(summary_txt, "w") as f:
+        f.write(summary_content)
+
+    print(summary_content)
+
+# ---------------------------------------------------------------------------
+# Main Multiprocessing Dispatcher
+# ---------------------------------------------------------------------------
+def main():
+    try:
+        mp.set_start_method("spawn", force=True)
+    except RuntimeError:
+        pass
+
+    all_files = sorted(glob.glob(os.path.join(DATA_DIR, "*.parquet")))
+    stock_files = [
+        f for f in all_files 
+        if not any(bad in Path(f).stem.lower() for bad in ["summary", "metrics", "meta", "optuna", "trials"])
+    ]
+
+    print(f"\n=======================================================")
+    print(f"Found {len(stock_files)} valid stock parquet files in '{DATA_DIR}'")
+    print(f"Pipeline: Optuna -> Kronos-Base + LoRA Sliding Walk-Forward")
+    print(f"Parallel Workers: {NUM_WORKERS} concurrent processes on GPU")
+    print(f"Output Directory: {OUTPUT_DIR}")
+    print(f"=======================================================\n")
+
+    if not stock_files:
+        print("[Error] No valid stock parquet files found.")
+        sys.exit(1)
+
+    chunks = [[] for _ in range(NUM_WORKERS)]
+    for idx, f in enumerate(stock_files):
+        chunks[idx % NUM_WORKERS].append(f)
+
+    processes = []
+    for rank in range(NUM_WORKERS):
+        p = mp.Process(target=run_worker, args=(rank, 0, chunks[rank]))
+        p.start()
+        processes.append(p)
+        time.sleep(5)  # Stagger worker initialization to avoid CUDA race conditions
+
+    for p in processes:
+        p.join()
+
+    print("\nAll workers completed walk-forward runs.")
+    print("Evaluating true cross-sectional factor metrics across all 50 stocks...")
+    compute_true_cross_sectional_factor_metrics(PRED_DIR, OUTPUT_DIR)
+
+if __name__ == "__main__":
+    main()

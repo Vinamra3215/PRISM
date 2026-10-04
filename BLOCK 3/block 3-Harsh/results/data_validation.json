@@ -1,0 +1,52 @@
+{
+  "rows": 57495,
+  "stocks": 50,
+  "date_min": "2022-01-03",
+  "date_max": "2026-09-03",
+  "embedding_dim": 832,
+  "stock_features": [
+    "ret_10d",
+    "52w_high_dist",
+    "intraday_range",
+    "rolling_volatility_10d",
+    "volatility_ratio_20d_60d",
+    "atr_14d",
+    "ma_ratio_50_200",
+    "macd_hist",
+    "mfi",
+    "volume_price_trend",
+    "keltner_channel_position",
+    "upper_shadow_ratio",
+    "cs_return_z",
+    "sector_relative_return",
+    "mean_reversion",
+    "vol_weight_mom"
+  ],
+  "market_features": [
+    "nifty_daily_return",
+    "nifty_5d_return",
+    "nifty_vol_20d",
+    "vix_level",
+    "vix_change",
+    "bank_return",
+    "pharma_return"
+  ],
+  "block2_selected_market_features": [
+    "nifty_daily_return",
+    "nifty_5d_return",
+    "pharma_return"
+  ],
+  "normalization": {
+    "stock": "same-day cross-sectional z-score; zero-variance/missing -> 0",
+    "market": "causal rolling 60-day z-score; early/zero-variance/missing -> 0",
+    "embedding": "per-sample layer normalization across actual 832 dimensions"
+  },
+  "splits": {
+    "train": "2022-01-01..2022-12-31",
+    "optuna_validation": "2023-01-01..2023-07-31",
+    "early_stopping": "2023-08-01..2023-12-31",
+    "test": "2024-01-01..2026-09-03"
+  },
+  "finite_feature_values": true,
+  "target_definition": "precomputed next-day stock return; feature row is dated t"
+}

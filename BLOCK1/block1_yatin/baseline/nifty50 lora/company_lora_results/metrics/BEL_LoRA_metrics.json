@@ -1,0 +1,18 @@
+{
+    "Predictions": 1041,
+    "RMSE": 2.5052358865400266,
+    "MAE": 1.8284803131473208,
+    "MAPE": 336.74992887189717,
+    "R2": -0.6673058540708858,
+    "Direction Accuracy": 50.86538461538461,
+    "Actual Return": 420.792282045931,
+    "Predicted Return": 424.71042527812085,
+    "Pearson Correlation": -0.030768195924851978,
+    "Company": "BEL",
+    "Lookback": 118,
+    "Forecast Horizon": 1,
+    "Epochs": 25,
+    "LoRA Rank": 8,
+    "LoRA Alpha": 16,
+    "LoRA Dropout": 0.05
+}

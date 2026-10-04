@@ -1,0 +1,18 @@
+{
+    "Predictions": 1041,
+    "RMSE": 2.0801352062708984,
+    "MAE": 1.5702646053003704,
+    "MAPE": 342.8420720819022,
+    "R2": -0.6919378072941986,
+    "Direction Accuracy": 49.23076923076923,
+    "Actual Return": 165.1412578243514,
+    "Predicted Return": 167.33208470600053,
+    "Pearson Correlation": 0.04533717991620358,
+    "Company": "EICHERMOT",
+    "Lookback": 118,
+    "Forecast Horizon": 1,
+    "Epochs": 25,
+    "LoRA Rank": 8,
+    "LoRA Alpha": 16,
+    "LoRA Dropout": 0.05
+}

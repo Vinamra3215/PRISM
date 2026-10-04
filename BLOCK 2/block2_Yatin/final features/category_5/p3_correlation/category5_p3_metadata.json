@@ -1,0 +1,62 @@
+{
+  "category": "Category 5 \u2014 Candlestick & Price Structure",
+  "phase": "Phase 1",
+  "step": "P3 \u2014 Within-Category Correlation",
+  "period": {
+    "start": "2022-01-01",
+    "end": "2023-12-31"
+  },
+  "input_p2_survivor_count": 7,
+  "input_p2_survivors": [
+    "keltner_channel_position",
+    "bollinger_band_percent_b",
+    "donchian_channel_position",
+    "consecutive_down_days",
+    "consecutive_up_days",
+    "candle_direction",
+    "upper_shadow_ratio"
+  ],
+  "high_correlation_threshold": 0.7,
+  "moderate_correlation_threshold": 0.4,
+  "high_correlation_action": "Drop feature with lower absolute ICIR.",
+  "final_p3_survivor_count": 4,
+  "final_p3_survivors": [
+    "keltner_channel_position",
+    "consecutive_down_days",
+    "candle_direction",
+    "upper_shadow_ratio"
+  ],
+  "dropped_features": [
+    {
+      "dropped_feature": "bollinger_band_percent_b",
+      "kept_feature": "keltner_channel_position",
+      "correlation": 0.9525418921942522,
+      "absolute_correlation": 0.9525418921942522,
+      "dropped_abs_ICIR": 0.2014992966386045,
+      "kept_abs_ICIR": 0.2045395970400955,
+      "reason": "|correlation| > 0.70 and lower |ICIR|"
+    },
+    {
+      "dropped_feature": "donchian_channel_position",
+      "kept_feature": "keltner_channel_position",
+      "correlation": 0.9425296819851835,
+      "absolute_correlation": 0.9425296819851835,
+      "dropped_abs_ICIR": 0.1838439511974065,
+      "kept_abs_ICIR": 0.2045395970400955,
+      "reason": "|correlation| > 0.70 and lower |ICIR|"
+    },
+    {
+      "dropped_feature": "consecutive_up_days",
+      "kept_feature": "consecutive_down_days",
+      "correlation": -0.8674790641124689,
+      "absolute_correlation": 0.8674790641124689,
+      "dropped_abs_ICIR": 0.1772661938991779,
+      "kept_abs_ICIR": 0.1832963952944952,
+      "reason": "|correlation| > 0.70 and lower |ICIR|"
+    }
+  ],
+  "uses_model_training": false,
+  "uses_lightgbm": false,
+  "uses_phase_2": false,
+  "continuous_learning": false
+}

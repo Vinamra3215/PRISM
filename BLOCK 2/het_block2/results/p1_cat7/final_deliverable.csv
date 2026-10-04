@@ -1,0 +1,8 @@
+selection_rank,feature,category,RankIC,ICIR,n_daily_ic,verdict
+1,cross_sectional_return_zscore,Cross-Sectional,-0.03363937784683863,-0.17309055137355295,492,KEEP
+2,return_rank_percentile_20d,Cross-Sectional,-0.0153518788173712,-0.07748044611279635,473,KEEP
+3,sector_relative_return,Cross-Sectional,-0.016128057988523105,-0.059799129244984935,473,KEEP
+4,cross_sectional_volatility_zscore,Cross-Sectional,-0.00663365647234189,-0.03528466373191258,473,KEEP
+5,idiosyncratic_volatility,Cross-Sectional,0.006824191075115294,0.03434915589659535,374,KEEP
+6,beta_60d,Cross-Sectional,-0.0007754877140738555,-0.003615401799139649,433,KEEP
+7,cross_sectional_volume_zscore,Cross-Sectional,-0.0001091783420890539,-0.0005560113015945426,493,KEEP

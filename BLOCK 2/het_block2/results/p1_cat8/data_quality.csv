@@ -1,0 +1,11 @@
+feature,total_rows,valid_rows,missing_rows,missing_pct
+volume_weighted_momentum,58496,57496,1000,1.7095185995623632
+volatility_adjusted_return,58496,57496,1000,1.7095185995623632
+mean_reversion_signal,58496,57496,1000,1.7095185995623632
+trend_strength,58496,55546,2950,5.043079868708972
+vix_adjusted_momentum,58496,56947,1549,2.6480443107221006
+gap_volume_interaction,58496,57546,950,1.6240426695842451
+rsi_volume_divergence,58496,57496,1000,1.7095185995623632
+breakout_signal,58496,58496,0,0.0
+reversal_signal,58496,58496,0,0.0
+sector_momentum_alignment,58496,16120,42376,72.44256017505471

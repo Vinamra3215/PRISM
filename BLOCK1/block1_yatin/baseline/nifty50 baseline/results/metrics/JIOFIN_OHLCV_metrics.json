@@ -1,0 +1,32 @@
+{
+    "company": "JIOFIN_OHLCV",
+    "model": "Kronos Base",
+    "experiment": "Zero-Shot Baseline",
+    "fine_tuning": false,
+    "lora": false,
+    "window_size": 118,
+    "prediction_length": 1,
+    "prediction_method": "118 actual previous trading days -> next actual trading day",
+    "uses_predicted_values_as_input": false,
+    "optuna": true,
+    "optuna_best_parameters": {
+        "T": 0.9720060537049605,
+        "top_p": 0.8342401746880865
+    },
+    "metrics": {
+        "RMSE_decimal": 0.034335341664607937,
+        "MAE_decimal": 0.024264236286724354,
+        "MAPE_decimal": 5.327483229486016,
+        "RMSE_percent": 3.4335341664607935,
+        "MAE_percent": 2.426423628672435,
+        "MAPE_percent": 532.7483229486016,
+        "R2": -1.9677680251639122,
+        "Direction_Accuracy_percent": 49.293563579277865,
+        "Actual_Return_percent": -11.770127378982686,
+        "Predicted_Return_percent": 2315.053463683649,
+        "Pearson_Correlation": -0.0552420189710289,
+        "Number_of_predictions": 637,
+        "First_prediction_date": "2024-02-13",
+        "Last_prediction_date": "2026-09-04"
+    }
+}

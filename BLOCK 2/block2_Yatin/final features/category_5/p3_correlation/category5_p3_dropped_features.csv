@@ -1,0 +1,4 @@
+dropped_feature,kept_feature,correlation,absolute_correlation,dropped_abs_ICIR,kept_abs_ICIR,reason
+bollinger_band_percent_b,keltner_channel_position,0.9525418921942522,0.9525418921942522,0.2014992966386045,0.2045395970400955,|correlation| > 0.70 and lower |ICIR|
+donchian_channel_position,keltner_channel_position,0.9425296819851835,0.9425296819851835,0.1838439511974065,0.2045395970400955,|correlation| > 0.70 and lower |ICIR|
+consecutive_up_days,consecutive_down_days,-0.8674790641124689,0.8674790641124689,0.1772661938991779,0.1832963952944952,|correlation| > 0.70 and lower |ICIR|

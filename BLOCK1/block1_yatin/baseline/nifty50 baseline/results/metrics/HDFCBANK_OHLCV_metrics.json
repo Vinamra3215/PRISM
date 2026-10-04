@@ -1,0 +1,32 @@
+{
+    "company": "HDFCBANK_OHLCV",
+    "model": "Kronos Base",
+    "experiment": "Zero-Shot Baseline",
+    "fine_tuning": false,
+    "lora": false,
+    "window_size": 118,
+    "prediction_length": 1,
+    "prediction_method": "118 actual previous trading days -> next actual trading day",
+    "uses_predicted_values_as_input": false,
+    "optuna": true,
+    "optuna_best_parameters": {
+        "T": 1.213143455130271,
+        "top_p": 0.5064695054584704
+    },
+    "metrics": {
+        "RMSE_decimal": 0.016419992814332606,
+        "MAE_decimal": 0.012037491179506404,
+        "MAPE_decimal": 3.620375631968951,
+        "RMSE_percent": 1.6419992814332607,
+        "MAE_percent": 1.2037491179506403,
+        "MAPE_percent": 362.0375631968951,
+        "R2": -0.7590181450171978,
+        "Direction_Accuracy_percent": 48.89529298751201,
+        "Actual_Return_percent": 6.669656977079241,
+        "Predicted_Return_percent": 1445.7445033834506,
+        "Pearson_Correlation": 0.03280704636290812,
+        "Number_of_predictions": 1041,
+        "First_prediction_date": "2022-06-24",
+        "Last_prediction_date": "2026-09-04"
+    }
+}

@@ -1,0 +1,18 @@
+{
+    "Predictions": 1041,
+    "RMSE": 2.1633779800950257,
+    "MAE": 1.6279598559911261,
+    "MAPE": 619.4578294731303,
+    "R2": -1.045768938890196,
+    "Direction Accuracy": 49.61538461538461,
+    "Actual Return": 212.5598147236893,
+    "Predicted Return": 212.14461529518073,
+    "Pearson Correlation": -0.04001010963989256,
+    "Company": "BAJAJ_AUTO",
+    "Lookback": 118,
+    "Forecast Horizon": 1,
+    "Epochs": 25,
+    "LoRA Rank": 8,
+    "LoRA Alpha": 16,
+    "LoRA Dropout": 0.05
+}

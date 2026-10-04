@@ -1,0 +1,4 @@
+feature,correlated_with,correlation,feature_abs_ICIR,correlated_feature_abs_ICIR,reason
+relative_strength_vs_nifty,return_rank_percentile_20d,0.9632681248089119,0.07748044611279635,0.07748044611279635,Dropped because correlation exceeded threshold and correlated feature had higher absolute ICIR
+market_relative_return,return_rank_percentile_20d,0.9635112346694559,0.07748044611279635,0.07748044611279635,Dropped because correlation exceeded threshold and correlated feature had higher absolute ICIR
+volume_rank_percentile,cross_sectional_volume_zscore,0.9186721006732473,0.0005560113015945426,0.0005560113015945426,Dropped because correlation exceeded threshold and correlated feature had higher absolute ICIR

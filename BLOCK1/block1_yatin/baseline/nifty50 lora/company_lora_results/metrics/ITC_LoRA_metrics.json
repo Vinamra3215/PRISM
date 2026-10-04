@@ -1,0 +1,18 @@
+{
+    "Predictions": 1041,
+    "RMSE": 1.6688592430950233,
+    "MAE": 1.1901518822531927,
+    "MAPE": 335.99398419855214,
+    "R2": -0.9761585998030813,
+    "Direction Accuracy": 50.480769230769226,
+    "Actual Return": 3.167686806173853,
+    "Predicted Return": 2.6302605404531,
+    "Pearson Correlation": 0.004738075254998972,
+    "Company": "ITC",
+    "Lookback": 118,
+    "Forecast Horizon": 1,
+    "Epochs": 25,
+    "LoRA Rank": 8,
+    "LoRA Alpha": 16,
+    "LoRA Dropout": 0.05
+}

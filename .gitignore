@@ -20,6 +20,8 @@ _main_venv/
 __pycache__/
 snap/
 yfinance_packages/
+__shutupandbendover/
+.codex/
 
 #files
 .bash_history
@@ -36,4 +38,8 @@ yfinance_packages/
 
 #ignore kronos model and other weights
 *.pth
-*.safetensors
+
+
+*.safetensors.git-credentials
+.codex/
+*.npy

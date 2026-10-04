@@ -1,0 +1,8 @@
+market_feature,mean_attention,std_attention
+nifty_daily_return,0.14052664,0.018556545
+nifty_5d_return,0.14097938,0.022568695
+nifty_vol_20d,0.14600006,0.032920294
+vix_level,0.14387496,0.030143617
+vix_change,0.14589457,0.033513784
+bank_return,0.14123037,0.019432234
+pharma_return,0.14149804,0.022620134

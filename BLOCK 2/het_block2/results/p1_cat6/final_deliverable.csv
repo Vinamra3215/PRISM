@@ -1,0 +1,8 @@
+selection_rank,feature,category,RankIC,ICIR,observations
+1,nifty50_daily_return,Market-Level,0.1214350265396541,,492
+2,nifty_pharma_return,Market-Level,0.09586196216002224,,492
+3,nifty_it_return,Market-Level,0.05967746957227321,,492
+4,nifty50_return_5d,Market-Level,0.05120408092038377,,488
+5,india_vix_change,Market-Level,-0.04869843740322017,,490
+6,nifty50_rolling_vol_20d,Market-Level,-0.04692337070731767,,473
+7,usdinr_daily_return,Market-Level,-0.036762552139470245,,492

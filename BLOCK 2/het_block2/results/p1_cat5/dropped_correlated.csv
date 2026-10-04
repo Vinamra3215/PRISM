@@ -1,0 +1,4 @@
+dropped_feature,kept_feature,correlation,dropped_abs_icir,kept_abs_icir
+keltner_channel_position,bollinger_pct_b,0.9525582018362706,0.19927219385009812,0.199387871882414
+consecutive_up_days,consecutive_down_days,-0.867493941639843,0.1862669454812545,0.19620535411786
+donchian_channel_position,bollinger_pct_b,0.9501533129322066,0.17488288090306878,0.199387871882414

@@ -1,0 +1,18 @@
+{
+    "Predictions": 1041,
+    "RMSE": 2.2829498486943356,
+    "MAE": 1.6988896051420614,
+    "MAPE": 496.84005094220873,
+    "R2": -0.9175057558092639,
+    "Direction Accuracy": 49.42307692307693,
+    "Actual Return": 62.74969471536449,
+    "Predicted Return": 63.45316655947777,
+    "Pearson Correlation": -0.028255373688193974,
+    "Company": "TECHM",
+    "Lookback": 118,
+    "Forecast Horizon": 1,
+    "Epochs": 25,
+    "LoRA Rank": 8,
+    "LoRA Alpha": 16,
+    "LoRA Dropout": 0.05
+}

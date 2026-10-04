@@ -1,0 +1,32 @@
+{
+    "company": "EICHERMOT_OHLCV",
+    "model": "Kronos Base",
+    "experiment": "Zero-Shot Baseline",
+    "fine_tuning": false,
+    "lora": false,
+    "window_size": 118,
+    "prediction_length": 1,
+    "prediction_method": "118 actual previous trading days -> next actual trading day",
+    "uses_predicted_values_as_input": false,
+    "optuna": true,
+    "optuna_best_parameters": {
+        "T": 0.6821286277717798,
+        "top_p": 0.5229425069904104
+    },
+    "metrics": {
+        "RMSE_decimal": 0.018873172477774158,
+        "MAE_decimal": 0.01437131648536483,
+        "MAPE_decimal": 3.5013025264090536,
+        "RMSE_percent": 1.8873172477774158,
+        "MAE_percent": 1.4371316485364831,
+        "MAPE_percent": 350.1302526409054,
+        "R2": -0.39209455935713455,
+        "Direction_Accuracy_percent": 48.79923150816523,
+        "Actual_Return_percent": 170.67628697021385,
+        "Predicted_Return_percent": -78.33699369820306,
+        "Pearson_Correlation": 0.06812415136120221,
+        "Number_of_predictions": 1041,
+        "First_prediction_date": "2022-06-24",
+        "Last_prediction_date": "2026-09-04"
+    }
+}

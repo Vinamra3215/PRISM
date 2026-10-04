@@ -1,0 +1,18 @@
+{
+    "Predictions": 1041,
+    "RMSE": 1.9115065807095186,
+    "MAE": 1.4244616748863892,
+    "MAPE": 375.12813473651903,
+    "R2": -0.887021214483918,
+    "Direction Accuracy": 50.480769230769226,
+    "Actual Return": 64.57279863169887,
+    "Predicted Return": 58.23363117031985,
+    "Pearson Correlation": -0.001862044986050236,
+    "Company": "SBILIFE",
+    "Lookback": 118,
+    "Forecast Horizon": 1,
+    "Epochs": 25,
+    "LoRA Rank": 8,
+    "LoRA Alpha": 16,
+    "LoRA Dropout": 0.05
+}

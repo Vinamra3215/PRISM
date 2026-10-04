@@ -1,0 +1,13 @@
+dropped_feature,kept_feature,correlation,dropped_ICIR,kept_ICIR,reason
+Category 5_bollinger_pct_b,Category 3_rsi_7d,0.9584960088923553,-0.199387871882414,-0.2187801920010379,Higher absolute ICIR
+Category 1_return_10d,Category 3_rsi_7d,0.8597178185106162,-0.198743577100594,-0.2187801920010379,Higher absolute ICIR
+Category 1_log_return_1d,Category 5_consecutive_down_days,-0.8241351476037438,-0.1730905513735529,0.19620535411786,Higher absolute ICIR
+Category 8_mean_reversion_signal,Category 3_rsi_7d,-0.8351914530159874,0.1690867798516943,-0.2187801920010379,Higher absolute ICIR
+Category 1_return_5d,Category 3_rsi_7d,0.8054828533309665,-0.1634695786708914,-0.2187801920010379,Higher absolute ICIR
+Category 4_force_index_13d,Category 3_rsi_7d,0.8250420002058667,-0.1474044677714412,-0.2187801920010379,Higher absolute ICIR
+Category 4_mfi_14d,Category 3_rsi_7d,0.7166731650151176,-0.122433434174306,-0.2187801920010379,Higher absolute ICIR
+Category 8_volatility_adjusted_return,Category 3_rsi_7d,0.7719439651840102,-0.0967309838207466,-0.2187801920010379,Higher absolute ICIR
+Category 1_return_20d,Category 3_rsi_7d,0.7471878779236958,-0.0774804461127963,-0.2187801920010379,Higher absolute ICIR
+Category 3_ma_ratio_50_200,Category 1_return_120d,0.8072278168721345,-0.0550883672737813,-0.1013887679226833,Higher absolute ICIR
+Category 7_cross_sectional_volatility_zscore,Category 2_rolling_volatility_20d,0.7760900355238771,-0.0352846637319125,-0.0357237498187728,Higher absolute ICIR
+Category 7_idiosyncratic_volatility,Category 2_rolling_volatility_20d,0.7024582822872893,0.0343491558965953,-0.0357237498187728,Higher absolute ICIR

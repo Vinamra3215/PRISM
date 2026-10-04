@@ -1,0 +1,4 @@
+feature,correlated_with,correlation,feature_abs_ICIR,correlated_feature_abs_ICIR,reason
+volume_weighted_momentum,volatility_adjusted_return,0.9532505058230343,0.09410196951445547,0.0967309838207466,Redundant; lower absolute ICIR
+vix_adjusted_momentum,volatility_adjusted_return,0.9779237326586808,0.07602529366917289,0.0967309838207466,Redundant; lower absolute ICIR
+sector_momentum_alignment,,,0.020933123583619907,,Outside target of 7 selected features

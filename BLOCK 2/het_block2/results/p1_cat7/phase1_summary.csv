@@ -1,0 +1,13 @@
+metric,value
+category,Category 7 - Cross-Sectional
+total_features,10
+selection_start,2022-01-01
+selection_end,2023-12-31
+correlation_threshold,0.7
+target_features,7
+selected_features,7
+cross_sectional_unit,All available stocks on the same trading day
+rankic_method,Daily Spearman correlation with next-day stock return
+beta_lookback,60
+idiosyncratic_volatility_lookback,60
+relative_strength_lookback,20

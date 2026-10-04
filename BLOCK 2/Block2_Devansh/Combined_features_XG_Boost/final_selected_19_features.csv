@@ -1,0 +1,12 @@
+#,Feature,Category,RankIC,ICIR,XGBoost Rank,Why Selected
+1,volatility_ratio_20d_60d,Volatility,---,0.0712,3,"Balanced composite rank (7.5), strong multi-category signal"
+2,rolling_volatility_10d,Volatility,---,0.0486,4,"Balanced composite rank (9.0), strong multi-category signal"
+3,atr_14d,Volatility,---,0.0422,7,"Balanced composite rank (11.5), strong multi-category signal"
+4,rsi_14,Momentum & Trend,---,0.1435,18,"Balanced composite rank (11.5), strong multi-category signal"
+5,macd_hist,Momentum & Trend,---,0.1335,19,"Balanced composite rank (12.5), strong multi-category signal"
+6,macd_signal,Momentum & Trend,---,0.039,14,"Balanced composite rank (15.5), strong multi-category signal"
+7,MFI,Volume,---,0.0,23,"Balanced composite rank (24.5), strong multi-category signal"
+8,keltner_channel_position,Candlestick,---,0.2045,13,"Balanced composite rank (7.0), strong multi-category signal"
+9,consecutive_down_days,Candlestick,---,0.1833,25,"Balanced composite rank (13.5), strong multi-category signal"
+10,trend_strength,Derived,---,0.0943,2,"Balanced composite rank (6.5), strong multi-category signal"
+11,vol_weight_mom,Derived,---,0.0988,10,"Balanced composite rank (10.0), strong multi-category signal"

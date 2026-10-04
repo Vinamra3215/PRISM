@@ -1,0 +1,32 @@
+{
+    "company": "TECHM_OHLCV",
+    "model": "Kronos Base",
+    "experiment": "Zero-Shot Baseline",
+    "fine_tuning": false,
+    "lora": false,
+    "window_size": 118,
+    "prediction_length": 1,
+    "prediction_method": "118 actual previous trading days -> next actual trading day",
+    "uses_predicted_values_as_input": false,
+    "optuna": true,
+    "optuna_best_parameters": {
+        "T": 0.7089929357945972,
+        "top_p": 0.9061586237345873
+    },
+    "metrics": {
+        "RMSE_decimal": 0.022024583622548204,
+        "MAE_decimal": 0.016695559539968662,
+        "MAPE_decimal": 4.535960483522026,
+        "RMSE_percent": 2.2024583622548204,
+        "MAE_percent": 1.6695559539968663,
+        "MAPE_percent": 453.5960483522026,
+        "R2": -0.7856837102723273,
+        "Direction_Accuracy_percent": 50.43227665706051,
+        "Actual_Return_percent": 61.1240100646737,
+        "Predicted_Return_percent": 1168.6228123523672,
+        "Pearson_Correlation": 0.011079555725181735,
+        "Number_of_predictions": 1041,
+        "First_prediction_date": "2022-06-24",
+        "Last_prediction_date": "2026-09-04"
+    }
+}

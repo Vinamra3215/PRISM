@@ -1,0 +1,7 @@
+{
+  "train_2022_days": 248,
+  "optuna_validation_days": 143,
+  "final_train_days": 391,
+  "early_stopping_days": 102,
+  "test_days": 665
+}
