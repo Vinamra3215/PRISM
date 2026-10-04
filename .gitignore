@@ -20,7 +20,6 @@ _main_venv/
 __pycache__/
 snap/
 yfinance_packages/
-__shutupandbendover/
 .codex/
 
 #files
@@ -31,6 +30,7 @@ __shutupandbendover/
 .profile
 .python_history
 .wget-hsts
+.gitconfig
 
 #file formats
 *.png
@@ -43,3 +43,6 @@ __shutupandbendover/
 *.safetensors.git-credentials
 .codex/
 *.npy
+__shutupandbendover/
+*.safetensors
+.git-credentials
