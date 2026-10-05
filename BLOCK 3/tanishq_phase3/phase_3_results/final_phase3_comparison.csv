@@ -1,0 +1,4 @@
+Architecture,Test Days,Mean Rank IC,ICIR,Win Rate,Ann. L/S Return,Sharpe,Sortino,Max Drawdown
+Architecture A (Concat+MLP),666,0.0139,0.0819,52.85%,12.45%,0.90,1.09,-14.91%
+Architecture B (MASTER Gating),666,0.0114,0.0652,51.95%,8.42%,0.70,1.12,-13.04%
+Architecture C (FiLM Conditioning),666,0.0129,0.0744,51.65%,12.88%,0.95,1.71,-10.86%

@@ -1,0 +1,20 @@
+
+===========================================================================
+PRISM PHASE 3: ARCHITECTURE A (CONCAT + MLP) WALK-FORWARD SUMMARY
+===========================================================================
+Test Window:               2024-01-01 to 2026-09-04
+Total Test Days:           666
+Rolling Training Window:   250 trading days (Retrained from Scratch Daily)
+---------------------------------------------------------------------------
+TIER 1: RANKING METRICS
+Mean Daily Rank IC:        0.0139
+ICIR (Rank IC / Std IC):   0.0819
+Win Rate (LS > 0):         52.85%
+---------------------------------------------------------------------------
+TIER 3: STRATEGY PERFORMANCE (Top 10 Long / Bottom 10 Short)
+Mean Daily Long-Short:     0.049%
+Annualized Return:         12.45%
+Sharpe Ratio:              0.90
+Sortino Ratio:             1.09
+Maximum Drawdown:          -14.91%
+===========================================================================
