@@ -1,0 +1,20 @@
+{
+  "N": 666,
+  "RMSE_return": 0.016620157025834168,
+  "MAE_return": 0.011680215292164755,
+  "R2_return": -0.3157272519838259,
+  "Direction_Accuracy": 0.521021021021021,
+  "Pearson_return": 0.07688049059886337,
+  "Company": "KOTAKBANK",
+  "Lookback": 118,
+  "Forecast_Horizon": 1,
+  "LoRA_Rank": 8,
+  "LoRA_Alpha": 16,
+  "LoRA_Dropout": 0.05,
+  "Best_Epoch": 4,
+  "Best_EarlyStop_Return_RMSE": 0.011691325962306352,
+  "Learning_Rate": 2.339711349387346e-05,
+  "Weight_Decay": 0.0035990981735060925,
+  "Checkpoint": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/checkpoints/KOTAKBANK_LoRA_best.pt",
+  "Embedding_File": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/embeddings/KOTAKBANK_kronos_lora_embeddings.parquet"
+}

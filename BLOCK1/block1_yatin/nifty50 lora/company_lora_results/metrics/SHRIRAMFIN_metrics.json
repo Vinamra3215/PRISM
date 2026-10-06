@@ -1,0 +1,20 @@
+{
+  "N": 666,
+  "RMSE_return": 0.028642223526290044,
+  "MAE_return": 0.021251366064153874,
+  "R2_return": -0.6245652110439477,
+  "Direction_Accuracy": 0.46096096096096095,
+  "Pearson_return": -0.02173522104474397,
+  "Company": "SHRIRAMFIN",
+  "Lookback": 118,
+  "Forecast_Horizon": 1,
+  "LoRA_Rank": 8,
+  "LoRA_Alpha": 16,
+  "LoRA_Dropout": 0.05,
+  "Best_Epoch": 3,
+  "Best_EarlyStop_Return_RMSE": 0.01830260798074526,
+  "Learning_Rate": 2.6648665515176e-05,
+  "Weight_Decay": 0.006002144142753213,
+  "Checkpoint": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/checkpoints/SHRIRAMFIN_LoRA_best.pt",
+  "Embedding_File": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/embeddings/SHRIRAMFIN_kronos_lora_embeddings.parquet"
+}

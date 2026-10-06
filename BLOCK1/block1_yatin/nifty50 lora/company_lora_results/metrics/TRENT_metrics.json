@@ -1,0 +1,20 @@
+{
+  "N": 666,
+  "RMSE_return": 0.033556297298614285,
+  "MAE_return": 0.022505169290758027,
+  "R2_return": -0.5427830537519207,
+  "Direction_Accuracy": 0.4894894894894895,
+  "Pearson_return": 0.007693090098242909,
+  "Company": "TRENT",
+  "Lookback": 118,
+  "Forecast_Horizon": 1,
+  "LoRA_Rank": 8,
+  "LoRA_Alpha": 16,
+  "LoRA_Dropout": 0.05,
+  "Best_Epoch": 11,
+  "Best_EarlyStop_Return_RMSE": 0.02233221153171591,
+  "Learning_Rate": 5.025038823984154e-05,
+  "Weight_Decay": 0.0080450471086183,
+  "Checkpoint": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/checkpoints/TRENT_LoRA_best.pt",
+  "Embedding_File": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/embeddings/TRENT_kronos_lora_embeddings.parquet"
+}

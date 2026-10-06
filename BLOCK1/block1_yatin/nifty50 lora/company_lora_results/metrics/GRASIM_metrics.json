@@ -1,0 +1,20 @@
+{
+  "N": 666,
+  "RMSE_return": 0.017387204591754784,
+  "MAE_return": 0.01308308164732152,
+  "R2_return": -0.4320258406983093,
+  "Direction_Accuracy": 0.503003003003003,
+  "Pearson_return": 0.011895991430987709,
+  "Company": "GRASIM",
+  "Lookback": 118,
+  "Forecast_Horizon": 1,
+  "LoRA_Rank": 8,
+  "LoRA_Alpha": 16,
+  "LoRA_Dropout": 0.05,
+  "Best_Epoch": 2,
+  "Best_EarlyStop_Return_RMSE": 0.011455341874384106,
+  "Learning_Rate": 3.6123573220170006e-05,
+  "Weight_Decay": 0.009414625631785467,
+  "Checkpoint": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/checkpoints/GRASIM_LoRA_best.pt",
+  "Embedding_File": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/embeddings/GRASIM_kronos_lora_embeddings.parquet"
+}

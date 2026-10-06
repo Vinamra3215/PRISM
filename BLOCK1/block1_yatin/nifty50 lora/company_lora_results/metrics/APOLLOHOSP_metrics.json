@@ -1,0 +1,20 @@
+{
+  "N": 666,
+  "RMSE_return": 0.015733661314340158,
+  "MAE_return": 0.011437208765347222,
+  "R2_return": -0.4292980979058547,
+  "Direction_Accuracy": 0.5015015015015015,
+  "Pearson_return": 0.04347525478206316,
+  "Company": "APOLLOHOSP",
+  "Lookback": 118,
+  "Forecast_Horizon": 1,
+  "LoRA_Rank": 8,
+  "LoRA_Alpha": 16,
+  "LoRA_Dropout": 0.05,
+  "Best_Epoch": 2,
+  "Best_EarlyStop_Return_RMSE": 0.0155322219856451,
+  "Learning_Rate": 2.1006179790036945e-05,
+  "Weight_Decay": 0.003208582980286238,
+  "Checkpoint": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/checkpoints/APOLLOHOSP_LoRA_best.pt",
+  "Embedding_File": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/embeddings/APOLLOHOSP_kronos_lora_embeddings.parquet"
+}

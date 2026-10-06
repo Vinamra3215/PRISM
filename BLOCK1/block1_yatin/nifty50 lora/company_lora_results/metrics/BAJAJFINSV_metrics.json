@@ -1,0 +1,20 @@
+{
+  "N": 666,
+  "RMSE_return": 0.01812367320974566,
+  "MAE_return": 0.013146799809123129,
+  "R2_return": -0.43633087675393867,
+  "Direction_Accuracy": 0.509009009009009,
+  "Pearson_return": 0.03629505368671908,
+  "Company": "BAJAJFINSV",
+  "Lookback": 118,
+  "Forecast_Horizon": 1,
+  "LoRA_Rank": 8,
+  "LoRA_Alpha": 16,
+  "LoRA_Dropout": 0.05,
+  "Best_Epoch": 5,
+  "Best_EarlyStop_Return_RMSE": 0.013483944761949206,
+  "Learning_Rate": 1.6989057916679773e-05,
+  "Weight_Decay": 0.004457345886521334,
+  "Checkpoint": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/checkpoints/BAJAJFINSV_LoRA_best.pt",
+  "Embedding_File": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/embeddings/BAJAJFINSV_kronos_lora_embeddings.parquet"
+}

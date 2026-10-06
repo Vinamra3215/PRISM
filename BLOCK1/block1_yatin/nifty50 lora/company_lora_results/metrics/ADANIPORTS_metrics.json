@@ -1,0 +1,20 @@
+{
+  "N": 666,
+  "RMSE_return": 0.023509578100112796,
+  "MAE_return": 0.016304294850617032,
+  "R2_return": -0.2625382827344045,
+  "Direction_Accuracy": 0.512012012012012,
+  "Pearson_return": 0.08625359864389243,
+  "Company": "ADANIPORTS",
+  "Lookback": 118,
+  "Forecast_Horizon": 1,
+  "LoRA_Rank": 8,
+  "LoRA_Alpha": 16,
+  "LoRA_Dropout": 0.05,
+  "Best_Epoch": 3,
+  "Best_EarlyStop_Return_RMSE": 0.03238658826216896,
+  "Learning_Rate": 2.3018766180758523e-05,
+  "Weight_Decay": 0.0014536257865828562,
+  "Checkpoint": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/checkpoints/ADANIPORTS_LoRA_best.pt",
+  "Embedding_File": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/embeddings/ADANIPORTS_kronos_lora_embeddings.parquet"
+}

@@ -1,0 +1,20 @@
+{
+  "N": 666,
+  "RMSE_return": 0.020247718033977458,
+  "MAE_return": 0.014670604498130506,
+  "R2_return": -0.5660209963324399,
+  "Direction_Accuracy": 0.4804804804804805,
+  "Pearson_return": -0.03602072569921396,
+  "Company": "POWERGRID",
+  "Lookback": 118,
+  "Forecast_Horizon": 1,
+  "LoRA_Rank": 8,
+  "LoRA_Alpha": 16,
+  "LoRA_Dropout": 0.05,
+  "Best_Epoch": 5,
+  "Best_EarlyStop_Return_RMSE": 0.016289461495228058,
+  "Learning_Rate": 1.3405684538749596e-05,
+  "Weight_Decay": 0.0039268320550274564,
+  "Checkpoint": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/checkpoints/POWERGRID_LoRA_best.pt",
+  "Embedding_File": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/embeddings/POWERGRID_kronos_lora_embeddings.parquet"
+}

@@ -1,0 +1,20 @@
+{
+  "N": 666,
+  "RMSE_return": 0.015029185440003548,
+  "MAE_return": 0.011374595823236574,
+  "R2_return": -0.4343050637603836,
+  "Direction_Accuracy": 0.4894894894894895,
+  "Pearson_return": 0.021947223271071684,
+  "Company": "NESTLEIND",
+  "Lookback": 118,
+  "Forecast_Horizon": 1,
+  "LoRA_Rank": 8,
+  "LoRA_Alpha": 16,
+  "LoRA_Dropout": 0.05,
+  "Best_Epoch": 3,
+  "Best_EarlyStop_Return_RMSE": 0.01223608010758595,
+  "Learning_Rate": 5.308291770934439e-05,
+  "Weight_Decay": 0.001561632975589289,
+  "Checkpoint": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/checkpoints/NESTLEIND_LoRA_best.pt",
+  "Embedding_File": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/embeddings/NESTLEIND_kronos_lora_embeddings.parquet"
+}

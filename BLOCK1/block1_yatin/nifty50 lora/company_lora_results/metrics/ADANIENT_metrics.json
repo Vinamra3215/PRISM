@@ -1,0 +1,20 @@
+{
+  "N": 666,
+  "RMSE_return": 0.02653951980560048,
+  "MAE_return": 0.017536379277395035,
+  "R2_return": -0.1930931074624933,
+  "Direction_Accuracy": 0.503003003003003,
+  "Pearson_return": 0.19312119304179767,
+  "Company": "ADANIENT",
+  "Lookback": 118,
+  "Forecast_Horizon": 1,
+  "LoRA_Rank": 8,
+  "LoRA_Alpha": 16,
+  "LoRA_Dropout": 0.05,
+  "Best_Epoch": 12,
+  "Best_EarlyStop_Return_RMSE": 0.027634671459622413,
+  "Learning_Rate": 2.404722783691275e-05,
+  "Weight_Decay": 0.00864933491458234,
+  "Checkpoint": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/checkpoints/ADANIENT_LoRA_best.pt",
+  "Embedding_File": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/embeddings/ADANIENT_kronos_lora_embeddings.parquet"
+}

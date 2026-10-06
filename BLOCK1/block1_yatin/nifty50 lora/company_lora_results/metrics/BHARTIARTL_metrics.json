@@ -1,0 +1,20 @@
+{
+  "N": 666,
+  "RMSE_return": 0.01570398204236391,
+  "MAE_return": 0.011628908580901534,
+  "R2_return": -0.3144982130681271,
+  "Direction_Accuracy": 0.506006006006006,
+  "Pearson_return": 0.03668472731545871,
+  "Company": "BHARTIARTL",
+  "Lookback": 118,
+  "Forecast_Horizon": 1,
+  "LoRA_Rank": 8,
+  "LoRA_Alpha": 16,
+  "LoRA_Dropout": 0.05,
+  "Best_Epoch": 2,
+  "Best_EarlyStop_Return_RMSE": 0.012198112585748638,
+  "Learning_Rate": 0.00010777888301056682,
+  "Weight_Decay": 0.0018597901560166996,
+  "Checkpoint": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/checkpoints/BHARTIARTL_LoRA_best.pt",
+  "Embedding_File": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/embeddings/BHARTIARTL_kronos_lora_embeddings.parquet"
+}

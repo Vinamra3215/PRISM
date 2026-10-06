@@ -1,0 +1,20 @@
+{
+  "N": 666,
+  "RMSE_return": 0.02593705962192841,
+  "MAE_return": 0.018992656201334317,
+  "R2_return": -0.47728530075744624,
+  "Direction_Accuracy": 0.524024024024024,
+  "Pearson_return": 0.05338352796767399,
+  "Company": "MAXHEALTH",
+  "Lookback": 118,
+  "Forecast_Horizon": 1,
+  "LoRA_Rank": 8,
+  "LoRA_Alpha": 16,
+  "LoRA_Dropout": 0.05,
+  "Best_Epoch": 8,
+  "Best_EarlyStop_Return_RMSE": 0.0248620880460887,
+  "Learning_Rate": 2.9398556592650894e-05,
+  "Weight_Decay": 0.004356566447504915,
+  "Checkpoint": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/checkpoints/MAXHEALTH_LoRA_best.pt",
+  "Embedding_File": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/embeddings/MAXHEALTH_kronos_lora_embeddings.parquet"
+}

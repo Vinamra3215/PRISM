@@ -1,0 +1,20 @@
+{
+  "N": 666,
+  "RMSE_return": 0.016706847391292582,
+  "MAE_return": 0.01240365987580428,
+  "R2_return": -0.332246753333318,
+  "Direction_Accuracy": 0.5015015015015015,
+  "Pearson_return": -0.003282500780113594,
+  "Company": "TITAN",
+  "Lookback": 118,
+  "Forecast_Horizon": 1,
+  "LoRA_Rank": 8,
+  "LoRA_Alpha": 16,
+  "LoRA_Dropout": 0.05,
+  "Best_Epoch": 1,
+  "Best_EarlyStop_Return_RMSE": 0.012723076780899595,
+  "Learning_Rate": 2.5246170037320828e-05,
+  "Weight_Decay": 0.0002691470692375486,
+  "Checkpoint": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/checkpoints/TITAN_LoRA_best.pt",
+  "Embedding_File": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/embeddings/TITAN_kronos_lora_embeddings.parquet"
+}

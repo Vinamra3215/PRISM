@@ -1,0 +1,20 @@
+{
+  "N": 666,
+  "RMSE_return": 0.01820443917064798,
+  "MAE_return": 0.01322316919755245,
+  "R2_return": -0.24112443920923599,
+  "Direction_Accuracy": 0.4804804804804805,
+  "Pearson_return": 0.0957609956481642,
+  "Company": "LT",
+  "Lookback": 118,
+  "Forecast_Horizon": 1,
+  "LoRA_Rank": 8,
+  "LoRA_Alpha": 16,
+  "LoRA_Dropout": 0.05,
+  "Best_Epoch": 3,
+  "Best_EarlyStop_Return_RMSE": 0.013386054544864533,
+  "Learning_Rate": 7.133398974817088e-05,
+  "Weight_Decay": 0.004619641228995208,
+  "Checkpoint": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/checkpoints/LT_LoRA_best.pt",
+  "Embedding_File": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/embeddings/LT_kronos_lora_embeddings.parquet"
+}

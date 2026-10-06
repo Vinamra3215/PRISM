@@ -1,0 +1,20 @@
+{
+  "N": 666,
+  "RMSE_return": 0.02005059222768017,
+  "MAE_return": 0.014420226995270312,
+  "R2_return": -0.537697048185886,
+  "Direction_Accuracy": 0.5405405405405406,
+  "Pearson_return": -0.022056360152950878,
+  "Company": "BAJAJ_AUTO",
+  "Lookback": 118,
+  "Forecast_Horizon": 1,
+  "LoRA_Rank": 8,
+  "LoRA_Alpha": 16,
+  "LoRA_Dropout": 0.05,
+  "Best_Epoch": 20,
+  "Best_EarlyStop_Return_RMSE": 0.02631443813667144,
+  "Learning_Rate": 1.1652312591153962e-05,
+  "Weight_Decay": 0.004586356149638359,
+  "Checkpoint": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/checkpoints/BAJAJ_AUTO_LoRA_best.pt",
+  "Embedding_File": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/embeddings/BAJAJ_AUTO_kronos_lora_embeddings.parquet"
+}

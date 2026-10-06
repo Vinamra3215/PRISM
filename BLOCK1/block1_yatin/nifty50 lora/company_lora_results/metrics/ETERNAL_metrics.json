@@ -1,0 +1,20 @@
+{
+  "N": 666,
+  "RMSE_return": 0.029501859818751627,
+  "MAE_return": 0.022585848029393542,
+  "R2_return": -0.5452690943292877,
+  "Direction_Accuracy": 0.487987987987988,
+  "Pearson_return": 0.03252569915578032,
+  "Company": "ETERNAL",
+  "Lookback": 118,
+  "Forecast_Horizon": 1,
+  "LoRA_Rank": 8,
+  "LoRA_Alpha": 16,
+  "LoRA_Dropout": 0.05,
+  "Best_Epoch": 1,
+  "Best_EarlyStop_Return_RMSE": 0.029874658652881105,
+  "Learning_Rate": 1.675818185268484e-05,
+  "Weight_Decay": 0.0038252247239770197,
+  "Checkpoint": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/checkpoints/ETERNAL_LoRA_best.pt",
+  "Embedding_File": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/embeddings/ETERNAL_kronos_lora_embeddings.parquet"
+}

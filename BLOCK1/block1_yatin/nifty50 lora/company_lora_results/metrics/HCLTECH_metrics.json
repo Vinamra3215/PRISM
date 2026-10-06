@@ -1,0 +1,20 @@
+{
+  "N": 666,
+  "RMSE_return": 0.019031430475656363,
+  "MAE_return": 0.01399310534531843,
+  "R2_return": -0.32121093086972197,
+  "Direction_Accuracy": 0.481981981981982,
+  "Pearson_return": 0.00404937761129324,
+  "Company": "HCLTECH",
+  "Lookback": 118,
+  "Forecast_Horizon": 1,
+  "LoRA_Rank": 8,
+  "LoRA_Alpha": 16,
+  "LoRA_Dropout": 0.05,
+  "Best_Epoch": 5,
+  "Best_EarlyStop_Return_RMSE": 0.015621511796150364,
+  "Learning_Rate": 6.150722533131141e-05,
+  "Weight_Decay": 0.009973914116843268,
+  "Checkpoint": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/checkpoints/HCLTECH_LoRA_best.pt",
+  "Embedding_File": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/embeddings/HCLTECH_kronos_lora_embeddings.parquet"
+}

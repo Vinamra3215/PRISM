@@ -1,0 +1,20 @@
+{
+  "N": 666,
+  "RMSE_return": 0.017989834135574784,
+  "MAE_return": 0.013385497403166063,
+  "R2_return": -0.5725195168588628,
+  "Direction_Accuracy": 0.481981981981982,
+  "Pearson_return": -0.01605831289983283,
+  "Company": "HDFCLIFE",
+  "Lookback": 118,
+  "Forecast_Horizon": 1,
+  "LoRA_Rank": 8,
+  "LoRA_Alpha": 16,
+  "LoRA_Dropout": 0.05,
+  "Best_Epoch": 1,
+  "Best_EarlyStop_Return_RMSE": 0.013315444963183725,
+  "Learning_Rate": 0.00023684057527414865,
+  "Weight_Decay": 0.0021019450420062848,
+  "Checkpoint": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/checkpoints/HDFCLIFE_LoRA_best.pt",
+  "Embedding_File": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/embeddings/HDFCLIFE_kronos_lora_embeddings.parquet"
+}

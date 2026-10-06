@@ -1,0 +1,20 @@
+{
+  "N": 666,
+  "RMSE_return": 0.023430221943871482,
+  "MAE_return": 0.016900225879951963,
+  "R2_return": -1.4906491136879318,
+  "Direction_Accuracy": 0.5165165165165165,
+  "Pearson_return": 0.018438406928780657,
+  "Company": "TATACONSUM",
+  "Lookback": 118,
+  "Forecast_Horizon": 1,
+  "LoRA_Rank": 8,
+  "LoRA_Alpha": 16,
+  "LoRA_Dropout": 0.05,
+  "Best_Epoch": 7,
+  "Best_EarlyStop_Return_RMSE": 0.014819319085406447,
+  "Learning_Rate": 0.00046496063368608586,
+  "Weight_Decay": 0.0028605220695452982,
+  "Checkpoint": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/checkpoints/TATACONSUM_LoRA_best.pt",
+  "Embedding_File": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/embeddings/TATACONSUM_kronos_lora_embeddings.parquet"
+}

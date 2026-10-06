@@ -1,0 +1,10 @@
+{
+  "Days": 666,
+  "Mean_RankIC": 0.0026471575145062013,
+  "ICIR": 0.015717893101348104,
+  "Mean_LongShort": 0.00035270532880368304,
+  "Positive_IC_Days": 0.5151057401812689,
+  "Cumulative_IC": 1.7524182746031052,
+  "Top10_Positive_Return_HitRate": 0.5315315315315315,
+  "Quantile_Monotonicity": 0.5180180180180181
+}

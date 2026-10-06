@@ -1,0 +1,20 @@
+{
+  "N": 666,
+  "RMSE_return": 0.016270122872333176,
+  "MAE_return": 0.012212854809390728,
+  "R2_return": -0.43524216792928105,
+  "Direction_Accuracy": 0.5075075075075075,
+  "Pearson_return": 0.05353527351111702,
+  "Company": "RELIANCE",
+  "Lookback": 118,
+  "Forecast_Horizon": 1,
+  "LoRA_Rank": 8,
+  "LoRA_Alpha": 16,
+  "LoRA_Dropout": 0.05,
+  "Best_Epoch": 1,
+  "Best_EarlyStop_Return_RMSE": 0.009964933638708621,
+  "Learning_Rate": 0.00023095392469966373,
+  "Weight_Decay": 0.009447406630706206,
+  "Checkpoint": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/checkpoints/RELIANCE_LoRA_best.pt",
+  "Embedding_File": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/embeddings/RELIANCE_kronos_lora_embeddings.parquet"
+}

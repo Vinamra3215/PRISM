@@ -1,0 +1,20 @@
+{
+  "N": 666,
+  "RMSE_return": 0.02225653345859658,
+  "MAE_return": 0.01659731230137097,
+  "R2_return": -0.8092624730540887,
+  "Direction_Accuracy": 0.49099099099099097,
+  "Pearson_return": -0.07126473465574763,
+  "Company": "HEROMOTOCO",
+  "Lookback": 118,
+  "Forecast_Horizon": 1,
+  "LoRA_Rank": 8,
+  "LoRA_Alpha": 16,
+  "LoRA_Dropout": 0.05,
+  "Best_Epoch": 1,
+  "Best_EarlyStop_Return_RMSE": 0.02203265251772377,
+  "Learning_Rate": 0.0004061664249553111,
+  "Weight_Decay": 0.0007247430596037741,
+  "Checkpoint": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/checkpoints/HEROMOTOCO_LoRA_best.pt",
+  "Embedding_File": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/embeddings/HEROMOTOCO_kronos_lora_embeddings.parquet"
+}

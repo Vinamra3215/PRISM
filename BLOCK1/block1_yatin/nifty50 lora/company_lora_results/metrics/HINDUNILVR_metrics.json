@@ -1,0 +1,20 @@
+{
+  "N": 666,
+  "RMSE_return": 0.015104287678860111,
+  "MAE_return": 0.01119246516815598,
+  "R2_return": -0.3282852227937312,
+  "Direction_Accuracy": 0.47897897897897895,
+  "Pearson_return": 0.030802162645670823,
+  "Company": "HINDUNILVR",
+  "Lookback": 118,
+  "Forecast_Horizon": 1,
+  "LoRA_Rank": 8,
+  "LoRA_Alpha": 16,
+  "LoRA_Dropout": 0.05,
+  "Best_Epoch": 12,
+  "Best_EarlyStop_Return_RMSE": 0.008324522611918923,
+  "Learning_Rate": 3.4622419351132115e-05,
+  "Weight_Decay": 0.008190102533100077,
+  "Checkpoint": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/checkpoints/HINDUNILVR_LoRA_best.pt",
+  "Embedding_File": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/embeddings/HINDUNILVR_kronos_lora_embeddings.parquet"
+}

@@ -1,0 +1,20 @@
+{
+  "N": 666,
+  "RMSE_return": 0.017757165749165648,
+  "MAE_return": 0.013171968361305625,
+  "R2_return": -0.5258398567478912,
+  "Direction_Accuracy": 0.5285285285285285,
+  "Pearson_return": 0.0696901289171189,
+  "Company": "CIPLA",
+  "Lookback": 118,
+  "Forecast_Horizon": 1,
+  "LoRA_Rank": 8,
+  "LoRA_Alpha": 16,
+  "LoRA_Dropout": 0.05,
+  "Best_Epoch": 4,
+  "Best_EarlyStop_Return_RMSE": 0.01603743462863095,
+  "Learning_Rate": 0.0002771923035605089,
+  "Weight_Decay": 0.00871420064882761,
+  "Checkpoint": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/checkpoints/CIPLA_LoRA_best.pt",
+  "Embedding_File": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/embeddings/CIPLA_kronos_lora_embeddings.parquet"
+}

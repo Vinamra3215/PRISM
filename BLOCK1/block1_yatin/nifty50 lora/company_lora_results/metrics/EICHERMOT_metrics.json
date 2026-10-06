@@ -1,0 +1,20 @@
+{
+  "N": 666,
+  "RMSE_return": 0.018583895552002516,
+  "MAE_return": 0.01405452364969681,
+  "R2_return": -0.3517952183368569,
+  "Direction_Accuracy": 0.4804804804804805,
+  "Pearson_return": 0.01855509129560606,
+  "Company": "EICHERMOT",
+  "Lookback": 118,
+  "Forecast_Horizon": 1,
+  "LoRA_Rank": 8,
+  "LoRA_Alpha": 16,
+  "LoRA_Dropout": 0.05,
+  "Best_Epoch": 13,
+  "Best_EarlyStop_Return_RMSE": 0.017123352394060324,
+  "Learning_Rate": 1.4248264979763742e-05,
+  "Weight_Decay": 0.004460878290987923,
+  "Checkpoint": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/checkpoints/EICHERMOT_LoRA_best.pt",
+  "Embedding_File": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/embeddings/EICHERMOT_kronos_lora_embeddings.parquet"
+}

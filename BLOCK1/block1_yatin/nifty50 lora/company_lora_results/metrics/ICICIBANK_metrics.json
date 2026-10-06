@@ -1,0 +1,20 @@
+{
+  "N": 666,
+  "RMSE_return": 0.014256644857438721,
+  "MAE_return": 0.010642994354902244,
+  "R2_return": -0.38080439554807355,
+  "Direction_Accuracy": 0.509009009009009,
+  "Pearson_return": 0.037865928391533736,
+  "Company": "ICICIBANK",
+  "Lookback": 118,
+  "Forecast_Horizon": 1,
+  "LoRA_Rank": 8,
+  "LoRA_Alpha": 16,
+  "LoRA_Dropout": 0.05,
+  "Best_Epoch": 1,
+  "Best_EarlyStop_Return_RMSE": 0.011105653396161845,
+  "Learning_Rate": 4.045340612796698e-05,
+  "Weight_Decay": 0.0029321102465689843,
+  "Checkpoint": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/checkpoints/ICICIBANK_LoRA_best.pt",
+  "Embedding_File": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/embeddings/ICICIBANK_kronos_lora_embeddings.parquet"
+}

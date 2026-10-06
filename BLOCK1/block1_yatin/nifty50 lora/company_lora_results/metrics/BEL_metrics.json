@@ -1,0 +1,20 @@
+{
+  "N": 666,
+  "RMSE_return": 0.025078342393599237,
+  "MAE_return": 0.018224700214526036,
+  "R2_return": -0.5102036409765596,
+  "Direction_Accuracy": 0.49099099099099097,
+  "Pearson_return": 0.024132755475757727,
+  "Company": "BEL",
+  "Lookback": 118,
+  "Forecast_Horizon": 1,
+  "LoRA_Rank": 8,
+  "LoRA_Alpha": 16,
+  "LoRA_Dropout": 0.05,
+  "Best_Epoch": 25,
+  "Best_EarlyStop_Return_RMSE": 0.020985158361820334,
+  "Learning_Rate": 6.492990280877514e-05,
+  "Weight_Decay": 0.009899458980372602,
+  "Checkpoint": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/checkpoints/BEL_LoRA_best.pt",
+  "Embedding_File": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/embeddings/BEL_kronos_lora_embeddings.parquet"
+}

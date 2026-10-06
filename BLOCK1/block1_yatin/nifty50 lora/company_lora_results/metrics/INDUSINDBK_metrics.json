@@ -1,0 +1,20 @@
+{
+  "N": 666,
+  "RMSE_return": 0.027944703226948073,
+  "MAE_return": 0.018118408735963362,
+  "R2_return": -0.6065327731017818,
+  "Direction_Accuracy": 0.4864864864864865,
+  "Pearson_return": 0.026903998672860512,
+  "Company": "INDUSINDBK",
+  "Lookback": 118,
+  "Forecast_Horizon": 1,
+  "LoRA_Rank": 8,
+  "LoRA_Alpha": 16,
+  "LoRA_Dropout": 0.05,
+  "Best_Epoch": 1,
+  "Best_EarlyStop_Return_RMSE": 0.014501163657551726,
+  "Learning_Rate": 0.0002799207802655319,
+  "Weight_Decay": 0.0031171615280192644,
+  "Checkpoint": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/checkpoints/INDUSINDBK_LoRA_best.pt",
+  "Embedding_File": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/embeddings/INDUSINDBK_kronos_lora_embeddings.parquet"
+}

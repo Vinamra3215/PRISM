@@ -1,0 +1,20 @@
+{
+  "N": 666,
+  "RMSE_return": 0.01763416943734892,
+  "MAE_return": 0.013169018697860923,
+  "R2_return": -0.3787194691476321,
+  "Direction_Accuracy": 0.487987987987988,
+  "Pearson_return": 0.06736854614215007,
+  "Company": "TCS",
+  "Lookback": 118,
+  "Forecast_Horizon": 1,
+  "LoRA_Rank": 8,
+  "LoRA_Alpha": 16,
+  "LoRA_Dropout": 0.05,
+  "Best_Epoch": 1,
+  "Best_EarlyStop_Return_RMSE": 0.01256068894315295,
+  "Learning_Rate": 4.1065705949864024e-05,
+  "Weight_Decay": 0.003320255107709186,
+  "Checkpoint": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/checkpoints/TCS_LoRA_best.pt",
+  "Embedding_File": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/embeddings/TCS_kronos_lora_embeddings.parquet"
+}

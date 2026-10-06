@@ -1,0 +1,20 @@
+{
+  "N": 666,
+  "RMSE_return": 0.018516788526096638,
+  "MAE_return": 0.013068770320261703,
+  "R2_return": -0.8240112072648667,
+  "Direction_Accuracy": 0.47897897897897895,
+  "Pearson_return": -0.05790069270544286,
+  "Company": "ASIANPAINT",
+  "Lookback": 118,
+  "Forecast_Horizon": 1,
+  "LoRA_Rank": 8,
+  "LoRA_Alpha": 16,
+  "LoRA_Dropout": 0.05,
+  "Best_Epoch": 15,
+  "Best_EarlyStop_Return_RMSE": 0.012630208990312254,
+  "Learning_Rate": 1.0319230522350809e-05,
+  "Weight_Decay": 0.006303039140800802,
+  "Checkpoint": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/checkpoints/ASIANPAINT_LoRA_best.pt",
+  "Embedding_File": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/embeddings/ASIANPAINT_kronos_lora_embeddings.parquet"
+}

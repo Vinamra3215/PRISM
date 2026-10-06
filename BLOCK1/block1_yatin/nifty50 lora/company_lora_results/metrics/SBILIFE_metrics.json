@@ -1,0 +1,20 @@
+{
+  "N": 666,
+  "RMSE_return": 0.01751514231658605,
+  "MAE_return": 0.013207996197008175,
+  "R2_return": -0.5581144880921225,
+  "Direction_Accuracy": 0.512012012012012,
+  "Pearson_return": 0.010662270720532174,
+  "Company": "SBILIFE",
+  "Lookback": 118,
+  "Forecast_Horizon": 1,
+  "LoRA_Rank": 8,
+  "LoRA_Alpha": 16,
+  "LoRA_Dropout": 0.05,
+  "Best_Epoch": 3,
+  "Best_EarlyStop_Return_RMSE": 0.013616912149550315,
+  "Learning_Rate": 2.541499917423399e-05,
+  "Weight_Decay": 0.007682019953442761,
+  "Checkpoint": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/checkpoints/SBILIFE_LoRA_best.pt",
+  "Embedding_File": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/embeddings/SBILIFE_kronos_lora_embeddings.parquet"
+}

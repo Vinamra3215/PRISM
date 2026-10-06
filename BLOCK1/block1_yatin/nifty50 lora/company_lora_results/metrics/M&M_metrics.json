@@ -1,0 +1,20 @@
+{
+  "N": 666,
+  "RMSE_return": 0.023370506423272267,
+  "MAE_return": 0.017267462656997905,
+  "R2_return": -0.589975109397147,
+  "Direction_Accuracy": 0.496996996996997,
+  "Pearson_return": -0.005626514446087607,
+  "Company": "M&M",
+  "Lookback": 118,
+  "Forecast_Horizon": 1,
+  "LoRA_Rank": 8,
+  "LoRA_Alpha": 16,
+  "LoRA_Dropout": 0.05,
+  "Best_Epoch": 6,
+  "Best_EarlyStop_Return_RMSE": 0.016256701660412064,
+  "Learning_Rate": 1.5246639227189668e-05,
+  "Weight_Decay": 0.0030476610879983925,
+  "Checkpoint": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/checkpoints/M&M_LoRA_best.pt",
+  "Embedding_File": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/embeddings/M&M_kronos_lora_embeddings.parquet"
+}

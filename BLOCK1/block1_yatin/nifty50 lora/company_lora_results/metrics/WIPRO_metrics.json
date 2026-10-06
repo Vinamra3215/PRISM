@@ -1,0 +1,20 @@
+{
+  "N": 666,
+  "RMSE_return": 0.020588983471693186,
+  "MAE_return": 0.015494669287604991,
+  "R2_return": -0.47586455465213917,
+  "Direction_Accuracy": 0.503003003003003,
+  "Pearson_return": 0.042997663494753195,
+  "Company": "WIPRO",
+  "Lookback": 118,
+  "Forecast_Horizon": 1,
+  "LoRA_Rank": 8,
+  "LoRA_Alpha": 16,
+  "LoRA_Dropout": 0.05,
+  "Best_Epoch": 1,
+  "Best_EarlyStop_Return_RMSE": 0.015600869409455011,
+  "Learning_Rate": 8.916079399667988e-05,
+  "Weight_Decay": 0.0023381690354560758,
+  "Checkpoint": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/checkpoints/WIPRO_LoRA_best.pt",
+  "Embedding_File": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/embeddings/WIPRO_kronos_lora_embeddings.parquet"
+}

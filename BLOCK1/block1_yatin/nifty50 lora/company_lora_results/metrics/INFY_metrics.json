@@ -1,0 +1,20 @@
+{
+  "N": 666,
+  "RMSE_return": 0.02106627372541706,
+  "MAE_return": 0.015218043188797986,
+  "R2_return": -0.5845537572347315,
+  "Direction_Accuracy": 0.512012012012012,
+  "Pearson_return": -0.010305215372331849,
+  "Company": "INFY",
+  "Lookback": 118,
+  "Forecast_Horizon": 1,
+  "LoRA_Rank": 8,
+  "LoRA_Alpha": 16,
+  "LoRA_Dropout": 0.05,
+  "Best_Epoch": 12,
+  "Best_EarlyStop_Return_RMSE": 0.013325974519367564,
+  "Learning_Rate": 1.3784464741416007e-05,
+  "Weight_Decay": 0.0008925507885855255,
+  "Checkpoint": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/checkpoints/INFY_LoRA_best.pt",
+  "Embedding_File": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/embeddings/INFY_kronos_lora_embeddings.parquet"
+}

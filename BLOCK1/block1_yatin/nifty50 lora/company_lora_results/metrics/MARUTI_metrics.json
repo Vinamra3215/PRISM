@@ -1,0 +1,20 @@
+{
+  "N": 666,
+  "RMSE_return": 0.01869590097137754,
+  "MAE_return": 0.01376745907875891,
+  "R2_return": -0.6637378835495473,
+  "Direction_Accuracy": 0.49099099099099097,
+  "Pearson_return": -0.023303504160563326,
+  "Company": "MARUTI",
+  "Lookback": 118,
+  "Forecast_Horizon": 1,
+  "LoRA_Rank": 8,
+  "LoRA_Alpha": 16,
+  "LoRA_Dropout": 0.05,
+  "Best_Epoch": 1,
+  "Best_EarlyStop_Return_RMSE": 0.011559112085631299,
+  "Learning_Rate": 2.3822105758585798e-05,
+  "Weight_Decay": 0.0033343805801886264,
+  "Checkpoint": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/checkpoints/MARUTI_LoRA_best.pt",
+  "Embedding_File": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/embeddings/MARUTI_kronos_lora_embeddings.parquet"
+}

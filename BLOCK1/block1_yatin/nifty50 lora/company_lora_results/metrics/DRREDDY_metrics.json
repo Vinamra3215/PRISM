@@ -1,0 +1,20 @@
+{
+  "N": 666,
+  "RMSE_return": 0.016228966015554434,
+  "MAE_return": 0.012292407713664,
+  "R2_return": -0.3809140782689724,
+  "Direction_Accuracy": 0.515015015015015,
+  "Pearson_return": 0.0774125716056745,
+  "Company": "DRREDDY",
+  "Lookback": 118,
+  "Forecast_Horizon": 1,
+  "LoRA_Rank": 8,
+  "LoRA_Alpha": 16,
+  "LoRA_Dropout": 0.05,
+  "Best_Epoch": 7,
+  "Best_EarlyStop_Return_RMSE": 0.013370175466856291,
+  "Learning_Rate": 3.826108766625142e-05,
+  "Weight_Decay": 0.004087779157741864,
+  "Checkpoint": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/checkpoints/DRREDDY_LoRA_best.pt",
+  "Embedding_File": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/embeddings/DRREDDY_kronos_lora_embeddings.parquet"
+}

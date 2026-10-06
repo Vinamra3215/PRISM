@@ -1,0 +1,20 @@
+{
+  "N": 666,
+  "RMSE_return": 0.0183877127226004,
+  "MAE_return": 0.01333794434392146,
+  "R2_return": -0.6206746106049761,
+  "Direction_Accuracy": 0.5105105105105106,
+  "Pearson_return": 0.052609005453941954,
+  "Company": "ULTRACEMCO",
+  "Lookback": 118,
+  "Forecast_Horizon": 1,
+  "LoRA_Rank": 8,
+  "LoRA_Alpha": 16,
+  "LoRA_Dropout": 0.05,
+  "Best_Epoch": 1,
+  "Best_EarlyStop_Return_RMSE": 0.021562858035067342,
+  "Learning_Rate": 7.130456765180987e-05,
+  "Weight_Decay": 0.009836591387660621,
+  "Checkpoint": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/checkpoints/ULTRACEMCO_LoRA_best.pt",
+  "Embedding_File": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/embeddings/ULTRACEMCO_kronos_lora_embeddings.parquet"
+}

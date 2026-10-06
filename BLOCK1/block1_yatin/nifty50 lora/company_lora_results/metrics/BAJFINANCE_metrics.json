@@ -1,0 +1,20 @@
+{
+  "N": 666,
+  "RMSE_return": 0.02024316047303312,
+  "MAE_return": 0.015065325190374844,
+  "R2_return": -0.3311211724787959,
+  "Direction_Accuracy": 0.4864864864864865,
+  "Pearson_return": 0.05967367604887204,
+  "Company": "BAJFINANCE",
+  "Lookback": 118,
+  "Forecast_Horizon": 1,
+  "LoRA_Rank": 8,
+  "LoRA_Alpha": 16,
+  "LoRA_Dropout": 0.05,
+  "Best_Epoch": 18,
+  "Best_EarlyStop_Return_RMSE": 0.013505253080359929,
+  "Learning_Rate": 1.0371174681354213e-05,
+  "Weight_Decay": 0.0037762012013941794,
+  "Checkpoint": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/checkpoints/BAJFINANCE_LoRA_best.pt",
+  "Embedding_File": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/embeddings/BAJFINANCE_kronos_lora_embeddings.parquet"
+}

@@ -1,0 +1,20 @@
+{
+  "N": 666,
+  "RMSE_return": 0.019905947605501628,
+  "MAE_return": 0.014737662838465584,
+  "R2_return": -0.23934275345812117,
+  "Direction_Accuracy": 0.5225225225225225,
+  "Pearson_return": 0.033647105343645484,
+  "Company": "TATASTEEL",
+  "Lookback": 118,
+  "Forecast_Horizon": 1,
+  "LoRA_Rank": 8,
+  "LoRA_Alpha": 16,
+  "LoRA_Dropout": 0.05,
+  "Best_Epoch": 1,
+  "Best_EarlyStop_Return_RMSE": 0.017262115205570847,
+  "Learning_Rate": 1.7517146228251904e-05,
+  "Weight_Decay": 0.007798770339504985,
+  "Checkpoint": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/checkpoints/TATASTEEL_LoRA_best.pt",
+  "Embedding_File": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/embeddings/TATASTEEL_kronos_lora_embeddings.parquet"
+}

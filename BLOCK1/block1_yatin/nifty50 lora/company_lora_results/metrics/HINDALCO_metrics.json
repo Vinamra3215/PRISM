@@ -1,0 +1,20 @@
+{
+  "N": 666,
+  "RMSE_return": 0.022409599356707416,
+  "MAE_return": 0.01675990875505435,
+  "R2_return": -0.4487924998089299,
+  "Direction_Accuracy": 0.49099099099099097,
+  "Pearson_return": -0.040002107255603464,
+  "Company": "HINDALCO",
+  "Lookback": 118,
+  "Forecast_Horizon": 1,
+  "LoRA_Rank": 8,
+  "LoRA_Alpha": 16,
+  "LoRA_Dropout": 0.05,
+  "Best_Epoch": 7,
+  "Best_EarlyStop_Return_RMSE": 0.01922013622751018,
+  "Learning_Rate": 9.993390946282031e-05,
+  "Weight_Decay": 0.007795725850435822,
+  "Checkpoint": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/checkpoints/HINDALCO_LoRA_best.pt",
+  "Embedding_File": "/home/soq/BLOCK 3/Block3.y/nifty50 lora/company_lora_results/embeddings/HINDALCO_kronos_lora_embeddings.parquet"
+}
