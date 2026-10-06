@@ -5,30 +5,35 @@ import pandas as pd
 import lightgbm as lgb
 from scipy.stats import spearmanr
 
-DATA_PATH = Path("/home/soq/__shutupandbendover/tanishq/phase2_data/nifty50_phase2_calibration_2022_2023.parquet")
-OUTPUT_DIR = Path("/home/soq/__shutupandbendover/tanishq/phase2_results")
+# Correct exact path with space in "BLOCK 2"
+DATA_PATH = Path("/home/soq/BLOCK 2/phase2_tanishq/nifty50_phase2_calibration_2022_2023.parquet")
+OUTPUT_DIR = Path("/home/soq/__shutupandbendover/tanishq/phase2")
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 print("Loading calibration dataset (2022-2023)...")
 df = pd.read_parquet(DATA_PATH)
 
-# Exclude non-feature identifiers / raw inputs / metadata / target
+# Exclude non-feature metadata, target, and 252-day lookback sparse features
 meta_cols = {
     'date', 'symbol', 'open', 'high', 'low', 'close', 'adj_close', 'volume', 
     'target_return_1d', 'repaired?', 'repaired'
 }
 
-# Keep only genuinely numeric columns
+# 252-day warm-up sparsity valla split bias create chese features ni exclude chestunnam
+excluded_features = {
+    '52w_high_dist', '52w_low_dist', 'dist_52w_high', 'dist_52w_low'
+}
+
 feature_cols = []
 for c in df.columns:
-    if c not in meta_cols and not c.startswith('_'):
+    if c not in meta_cols and c not in excluded_features and not c.startswith('_'):
         try:
             df[c] = pd.to_numeric(df[c], errors='coerce')
             feature_cols.append(c)
         except Exception:
             pass
 
-print(f"Total candidate numeric features for Phase 2: {len(feature_cols)}")
+print(f"Total candidate numeric features (excluding 52w features): {len(feature_cols)}")
 
 # Clean infinities
 clean_df = df[feature_cols + ['target_return_1d']].replace([np.inf, -np.inf], np.nan)
@@ -51,7 +56,7 @@ for f in feature_cols:
 # -------------------------------------------------------------------------
 # 2. Global Correlation Matrix & Pruning (|rho| > 0.70)
 # -------------------------------------------------------------------------
-print("Computing global Spearman correlation matrix across all 8 categories...")
+print("Computing global Spearman correlation matrix across remaining features...")
 corr_matrix = clean_df[feature_cols].corr(method='spearman')
 corr_matrix.to_csv(OUTPUT_DIR / "global_correlation_matrix.csv")
 
@@ -146,4 +151,15 @@ with open(OUTPUT_DIR / "phase2_final_selected_features.txt", "w") as f:
     f.write(report_text)
 
 print("\n" + report_text)
+
+# Also generate the aligned .txt counterparts for CSVs
+for csv_name in ["cross_category_dropped_features.csv", "lightgbm_feature_importance.csv"]:
+    p = OUTPUT_DIR / csv_name
+    if p.exists():
+        t = pd.read_csv(p)
+        for col in t.select_dtypes(include=["float", "float64", "float32"]).columns:
+            t[col] = t[col].apply(lambda x: f"{x:.4f}" if pd.notnull(x) else "NaN")
+        with open(p.with_suffix(".txt"), "w") as tf:
+            tf.write(t.to_string(index=False) + "\n")
+
 print(f"\nAll deliverables written to: {OUTPUT_DIR}")

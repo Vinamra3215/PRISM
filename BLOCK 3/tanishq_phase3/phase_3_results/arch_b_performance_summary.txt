@@ -1,0 +1,20 @@
+
+===========================================================================
+PRISM PHASE 3: ARCHITECTURE B (CROSS-ATTENTION GATING) WALK-FORWARD SUMMARY
+===========================================================================
+Test Window:               2024-01-01 to 2026-09-04
+Total Test Days:           666
+Rolling Training Window:   250 trading days (Retrained from Scratch Daily)
+---------------------------------------------------------------------------
+TIER 1: RANKING METRICS
+Mean Daily Rank IC:        0.0114
+ICIR (Rank IC / Std IC):   0.0652
+Win Rate (LS > 0):         51.95%
+---------------------------------------------------------------------------
+TIER 3: STRATEGY PERFORMANCE (Top 10 Long / Bottom 10 Short)
+Mean Daily Long-Short:     0.033%
+Annualized Return:         8.42%
+Sharpe Ratio:              0.70
+Sortino Ratio:             1.12
+Maximum Drawdown:          -13.04%
+===========================================================================
