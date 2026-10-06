@@ -31,6 +31,10 @@ yfinance_packages/
 .python_history
 .wget-hsts
 .gitconfig
+.pptx
+.vsix
+wget-log
+.html
 
 #file formats
 *.png
@@ -38,6 +42,7 @@ yfinance_packages/
 
 #ignore kronos model and other weights
 *.pth
+.pt
 
 
 *.safetensors.git-credentials
